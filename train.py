@@ -32,8 +32,11 @@ from collections import OrderedDict
 import random
 args = parameter_parser()
 seed = args.seed
+
 random.seed(seed)
+
 np.random.seed(seed)
+
 torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 torch.backends.cudnn.deterministic = True
@@ -71,22 +74,22 @@ def train(args):
 
     # %% ====================== Load data ======================
     # Read check-in train data
-    train_df = pd.read_csv(args.data_train)
-    val_df = pd.read_csv(args.data_val)
+    train_df = pd.read_csv(args.data_train) 
+    val_df = pd.read_csv(args.data_val)     
 
     # Build POI graph (built from train_df)
     print('Loading POI graph...')
-    raw_A = load_graph_adj_mtx(args.data_adj_mtx)
-    raw_X = load_graph_node_features(args.data_node_feats,
-                                     args.feature1,
-                                     args.feature2,
-                                     args.feature3,
-                                     args.feature4)
+    raw_A = load_graph_adj_mtx(args.data_adj_mtx)   
+    raw_X = load_graph_node_features(args.data_node_feats,  
+                                     args.feature1, 
+                                     args.feature2, 
+                                     args.feature3, 
+                                     args.feature4) 
 
     if args.geo_graph_enabled:
-        geo_raw_A = load_graph_adj_mtx(args.geo_adj_mtx)
+        geo_raw_A = load_graph_adj_mtx(args.geo_adj_mtx)  
         geo_raw_X = load_graph_node_features_of_geo(args.geo_node_feats,
-                                         "checkin_cnt",
+                                         "checkin_cnt",  
                                          "geohash")
 
     logging.info(
@@ -100,7 +103,7 @@ def train(args):
     # One-hot encoding poi categories
     logging.info('One-hot encoding poi categories id')
     one_hot_encoder = OneHotEncoder()
-    cat_list = list(raw_X[:, 1])
+    cat_list = list(raw_X[:, 1])  
     for i in range(len(cat_list)):
         if str(cat_list[i]).lower() == 'nan':
             cat_list[i] = 'unknown'
@@ -108,18 +111,18 @@ def train(args):
     if args.geo_graph_enabled:
         geo_list = list(geo_raw_X[:, 1])
         geo_one_hot_encoder = OneHotEncoder()
-        geo_one_hot_encoder.fit(list(map(lambda x: [x], geo_list)))
-        geo_one_hot_rlt = geo_one_hot_encoder.transform(list(map(lambda x: [x], geo_list))).toarray()
+        geo_one_hot_encoder.fit(list(map(lambda x: [x], geo_list)))  
+        geo_one_hot_rlt = geo_one_hot_encoder.transform(list(map(lambda x: [x], geo_list))).toarray()  
 
     if args.cat_encoder == "OneHot":
-        one_hot_encoder.fit(list(map(lambda x: [x], cat_list)))
-        one_hot_rlt = one_hot_encoder.transform(list(map(lambda x: [x], cat_list))).toarray()
+        one_hot_encoder.fit(list(map(lambda x: [x], cat_list))) 
+        one_hot_rlt = one_hot_encoder.transform(list(map(lambda x: [x], cat_list))).toarray()   
     elif args.cat_encoder == "SentenceTransformer":
         model_sentence = SentenceTransformer('sentence-transformers/all-mpnet-base-v2', device=args.device)
         embeddings = model_sentence.encode(cat_list)
         one_hot_rlt = embeddings
 
-
+    
     logging.info(f"use_time: {args.use_time}")
     logging.info(f"use_cat: {args.use_cat}")
     logging.info(f"cat_type: {args.cat_type}")
@@ -130,25 +133,27 @@ def train(args):
             pickle.dump(geo_one_hot_encoder, f)
 
     if args.cat_encoder == "OneHot":
+        # logging.info(f'POI categories: {list(one_hot_encoder.categories_[0])}')
+        # Save ont-hot encoder
         with open(os.path.join(args.save_dir, 'one-hot-encoder.pkl'), "wb") as f:
             pickle.dump(one_hot_encoder, f)
 
     # Normalization
-    print('Laplician matrix...')
+    print('Laplician matrix...')    
     A = calculate_laplacian_matrix(raw_A, mat_type='hat_rw_normd_lap_mat')
     if args.geo_graph_enabled:
         A_geo = calculate_laplacian_matrix(geo_raw_A, mat_type='hat_rw_normd_lap_mat')
-
-    nodes_df = pd.read_csv(args.data_node_feats, delimiter="\t")
-    poi_ids = list(nodes_df['node_name/poi_id'].tolist())
+   
+    nodes_df = pd.read_csv(args.data_node_feats, delimiter="\t")    
+    poi_ids = list(nodes_df['node_name/poi_id'].tolist())   
     poi_id2idx_dict = OrderedDict(zip(poi_ids, range(len(poi_ids))))
 
     # Cat id to index
-    cat_ids = cat_list
+    cat_ids = cat_list 
     cat_id2idx_dict = OrderedDict(zip(cat_ids, range(len(cat_ids))))
 
     # Poi idx to cat idx
-    poi_idx2cat_idx_dict = {}
+    poi_idx2cat_idx_dict = {}  
     for i, row in nodes_df.iterrows():
         if not isinstance(row[args.feature2], str):
             row[args.feature2] = 'unknown'
@@ -163,7 +168,7 @@ def train(args):
 
     if args.geo_graph_enabled:
         # Geo id to index
-        geo_nodes_df = pd.read_csv(args.geo_node_feats, delimiter="\t")
+        geo_nodes_df = pd.read_csv(args.geo_node_feats, delimiter="\t")  
         geo_ids = list(geo_nodes_df['geohash'].tolist())
         geo_id2idx_dict = OrderedDict(zip(geo_ids, range(len(geo_ids))))
 
@@ -178,9 +183,9 @@ def train(args):
         X_geo = geo_one_hot_rlt
         logging.info(f"After one hot encoding poi geo, X_geo.shape: {X_geo.shape}")
 
-
     num_cats = len(cat_ids)
-    X = one_hot_rlt
+ 
+    X = one_hot_rlt     
     logging.info(f"After one hot encoding poi cat, X.shape: {X.shape}")
 
     def load_multimodal_data(filename):
@@ -201,57 +206,63 @@ def train(args):
             pickle.dump(data, f)
         return data
     if args.multimodal_enabled:
-
         image_embeddings_filename = f'./dataset/{dataset_name}/modal_image_embedding.json'
         review_embeddings_filename = f'./dataset/{dataset_name}/modal_review_embedding.json'
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             meta_embeddings_filename = f'./dataset/{dataset_name}/modal_meta_embedding.json'
             review_summary_embeddings_filename = f'./dataset/{dataset_name}/modal_review_summary_embedding.json'
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_embeddings_filename = f'./dataset/{dataset_name}/modal_meta_embedding.json'
         print('loading multimodal data...')
         image_dict = load_multimodal_data(image_embeddings_filename)
         review_dict = load_multimodal_data(review_embeddings_filename)
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             meta_dict = load_multimodal_data(meta_embeddings_filename)
             review_summary_dict = load_multimodal_data(review_summary_embeddings_filename)
-
-        X_image = np.array([image_dict[poi_id] for poi_id in poi_ids])
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_dict = load_multimodal_data(meta_embeddings_filename)
+        X_image = np.array([image_dict[poi_id] for poi_id in poi_ids])    # poi_ids是所有poi的id列表，顺序是A邻接矩阵的行列顺序
         X_review = np.array([review_dict[poi_id] for poi_id in poi_ids])
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             X_meta = np.array([meta_dict[poi_id] for poi_id in poi_ids])
             X_review_summary = np.array([review_summary_dict[poi_id] for poi_id in poi_ids])
             logging.info(f"After loading multimodal data, X_meta.shape: {X_meta.shape}")
             logging.info(f"After loading multimodal data, X_review_summary.shape: {X_review_summary.shape}")
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            X_meta = np.array([meta_dict[poi_id] for poi_id in poi_ids])
+            logging.info(f"After loading multimodal data, X_meta.shape: {X_meta.shape}")
         logging.info(f"After loading multimodal data, X_image.shape: {X_image.shape}")
         logging.info(f"After loading multimodal data, X_review.shape: {X_review.shape}")
 
 
-
-    # User id to index
     user_ids = sorted(list(set(train_df['user_id'].tolist())))
     user_ids = list(map(str, user_ids))
 
     user_id2idx_dict = OrderedDict(zip(user_ids, range(len(user_ids))))
+
     # %% ====================== Define Dataset ======================
     class TrajectoryDatasetTrain(Dataset):
         def __init__(self, train_df):
             self.df = train_df
-            self.traj_seqs = []
+            self.traj_seqs = []  
             self.input_seqs = []
             self.label_seqs = []
 
             traj_data_dict = {traj_id: sub_df for traj_id, sub_df in train_df.groupby('trajectory_id')}
 
+
             traj_ids = sorted(train_df['trajectory_id'].unique().tolist())
             for traj_id in tqdm(traj_ids):
                 traj_df = traj_data_dict[traj_id]
-                poi_ids = traj_df['POI_id'].to_list()
-                poi_idxs = [poi_id2idx_dict[each] for each in poi_ids]
+               
+                poi_ids = traj_df['POI_id'].to_list()  
+                poi_idxs = [poi_id2idx_dict[each] for each in poi_ids] 
 
-                input_seq = []
-                label_seq = []
+                input_seq = []  
+                label_seq = []  
 
                 if args.use_time:
-                    time_feature = traj_df[args.time_feature].to_list()
+                    time_feature = traj_df[args.time_feature].to_list() 
                     for i in range(len(poi_idxs) - 1):
                         input_seq.append((poi_idxs[i], time_feature[i]))
                         label_seq.append((poi_idxs[i + 1], time_feature[i + 1]))
@@ -260,12 +271,12 @@ def train(args):
                         input_seq.append((poi_idxs[i],))
                         label_seq.append((poi_idxs[i + 1],))
 
-                if len(input_seq) < args.short_traj_thres:
+                if len(input_seq) < args.short_traj_thres:  
                     continue
 
-                self.traj_seqs.append(traj_id)
-                self.input_seqs.append(input_seq)
-                self.label_seqs.append(label_seq)
+                self.traj_seqs.append(traj_id)   
+                self.input_seqs.append(input_seq)   
+                self.label_seqs.append(label_seq)   
 
         def __len__(self):
             assert len(self.input_seqs) == len(self.label_seqs) == len(self.traj_seqs)
@@ -293,19 +304,21 @@ def train(args):
 
                 # Ger POIs idx in this trajectory
                 traj_df = traj_data_dict[traj_id]
-                poi_ids = traj_df['POI_id'].to_list()
-                poi_idxs = []
+                poi_ids = traj_df['POI_id'].to_list() 
+                poi_idxs = []  
 
-                for each in poi_ids:
+                for each in poi_ids:   
                     if each in poi_id2idx_dict.keys():
                         poi_idxs.append(poi_id2idx_dict[each])
                     else:
+                        # Ignore poi if not in training set
                         continue
 
                 input_seq = []
-                label_seq = []
+                label_seq = []   
+
                 if args.use_time:
-                    time_feature = traj_df[args.time_feature].to_list()
+                    time_feature = traj_df[args.time_feature].to_list()  
                     for i in range(len(poi_idxs) - 1):
                         input_seq.append((poi_idxs[i], time_feature[i]))
                         label_seq.append((poi_idxs[i + 1], time_feature[i + 1]))
@@ -314,6 +327,7 @@ def train(args):
                         input_seq.append((poi_idxs[i],))
                         label_seq.append((poi_idxs[i + 1],))
 
+                # Ignore seq if too short
                 if len(input_seq) < args.short_traj_thres:
                     continue
 
@@ -347,7 +361,7 @@ def train(args):
     # %% ====================== Build Models ======================
     # Model1: POI embedding model
     if isinstance(X, np.ndarray):
-        X = torch.from_numpy(X)
+        X = torch.from_numpy(X) 
         A = torch.from_numpy(A)
     X = X.to(device=args.device, dtype=torch.float)
     A = A.to(device=args.device, dtype=torch.float)
@@ -357,55 +371,61 @@ def train(args):
         X_image = X_image.to(device=args.device, dtype=torch.float)
         X_review = torch.from_numpy(X_review)
         X_review = X_review.to(device=args.device, dtype=torch.float)
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             X_meta = torch.from_numpy(X_meta)
             X_meta = X_meta.to(device=args.device, dtype=torch.float)
             X_review_summary = torch.from_numpy(X_review_summary)
             X_review_summary = X_review_summary.to(device=args.device, dtype=torch.float)
-
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            X_meta = torch.from_numpy(X_meta)
+            X_meta = X_meta.to(device=args.device, dtype=torch.float)
         args.gcn_image_nfeat = X_image.shape[1]
         image_embed_model = GCN(ninput=args.gcn_image_nfeat,
-                              nhid=args.gcn_nhid,  # [32, 64]   List of hidden dims for gcn layers
-                              noutput=args.multimodal_embed_dim,  # Multimodal embedding dimensions 128
+                              nhid=args.gcn_nhid,  
+                              noutput=args.multimodal_embed_dim,  
                               dropout=args.gcn_dropout)
         args.gcn_review_nfeat = X_review.shape[1]
         review_embed_model = GCN(ninput=args.gcn_review_nfeat,
-                                 nhid=args.gcn_nhid,  # [32, 64]   List of hidden dims for gcn layers
-                                 noutput=args.multimodal_embed_dim,  # Multimodal embedding dimensions 128
+                                 nhid=args.gcn_nhid,  
+                                 noutput=args.multimodal_embed_dim,  
                                  dropout=args.gcn_dropout)
 
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             args.gcn_meta_nfeat = X_meta.shape[1]
             meta_embed_model = GCN(ninput=args.gcn_meta_nfeat,
-                                  nhid=args.gcn_nhid,  # [32, 64]   List of hidden dims for gcn layers
-                                  noutput=args.multimodal_embed_dim,  # Multimodal embedding dimensions 128
+                                  nhid=args.gcn_nhid,  
+                                  noutput=args.multimodal_embed_dim,  
                                   dropout=args.gcn_dropout)
 
             args.gcn_review_summary_nfeat = X_review_summary.shape[1]
             review_summary_embed_model = GCN(ninput=args.gcn_review_summary_nfeat,
-                                  nhid=args.gcn_nhid,  # [32, 64]   List of hidden dims for gcn layers
-                                  noutput=args.multimodal_embed_dim,  # Multimodal embedding dimensions 128
+                                  nhid=args.gcn_nhid,  
+                                  noutput=args.multimodal_embed_dim,  
                                   dropout=args.gcn_dropout)
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            args.gcn_meta_nfeat = X_meta.shape[1]
+            meta_embed_model = GCN(ninput=args.gcn_meta_nfeat,
+                                   nhid=args.gcn_nhid,  
+                                   noutput=args.multimodal_embed_dim, 
+                                   dropout=args.gcn_dropout)
 
-
-    args.gcn_nfeat = X.shape[1]
-    poi_embed_model = GCN(ninput=args.gcn_nfeat, # cat编码维数+3
-                          nhid=args.gcn_nhid,   # [32, 64]   List of hidden dims for gcn layers
-                          noutput=args.poi_embed_dim,   # POI embedding dimensions 128
-                          dropout=args.gcn_dropout) # 0.3
-
+    args.gcn_nfeat = X.shape[1]  
+    poi_embed_model = GCN(ninput=args.gcn_nfeat, 
+                          nhid=args.gcn_nhid,   
+                          noutput=args.poi_embed_dim,   
+                          dropout=args.gcn_dropout) 
 
     # Model1.5: Geo embedding model
     if args.geo_graph_enabled:
         if isinstance(X_geo, np.ndarray):
-            X_geo = torch.from_numpy(X_geo)
-            A_geo = torch.from_numpy(A_geo)
+            X_geo = torch.from_numpy(X_geo)  
+            A_geo = torch.from_numpy(A_geo)  
         X_geo = X_geo.to(device=args.device, dtype=torch.float)
         A_geo = A_geo.to(device=args.device, dtype=torch.float)
-        args.gcn_geo_nfeat = X_geo.shape[1]
+        args.gcn_geo_nfeat = X_geo.shape[1]  
         geo_embed_model = GCN(ninput=args.gcn_geo_nfeat,
-                                nhid=args.gcn_nhid,
-                                noutput=args.geo_embed_dim,
+                                nhid=args.gcn_nhid,   
+                                noutput=args.geo_embed_dim,   
                                 dropout=args.gcn_dropout)
 
 
@@ -422,8 +442,10 @@ def train(args):
         cat_embed_model = CategoryEmbeddings(num_cats, args.cat_embed_dim, one_hot_rlt)
 
     # %% Model5: Embedding fusion models
-    if dataset_name not in ['new_orleans', 'philadelphia']:
+    if dataset_name in ['Alaska', 'Hawaii']:
         embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 4)
+    elif dataset_name in ['NYC', 'TKY', 'GB']:
+        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 3)
     else:
         embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 2)
 
@@ -437,15 +459,19 @@ def train(args):
 
     # %% Model6: Sequence model
     if args.use_time and args.geo_graph_enabled:
-        if dataset_name not in ['new_orleans', 'philadelphia']:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim# + args.multimodal_embed_dim * 4
+        if dataset_name in ['Alaska', 'Hawaii']:
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim
         else:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim# + args.multimodal_embed_dim * 2
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim
     else:
-        if dataset_name not in ['new_orleans', 'philadelphia']:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim# + args.multimodal_embed_dim * 4
+        if dataset_name in ['Alaska', 'Hawaii']:
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim
         else:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim# + args.multimodal_embed_dim * 2
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim
     if args.geo_graph_enabled:
         seq_model = TransformerModel(num_pois,
                                  num_cats,
@@ -497,7 +523,7 @@ def train(args):
     if args.fusion_method == 'fusion' or args.fusion_method == 'concat':
         if args.use_time and args.geo_graph_enabled:
             if args.multi_loss_weight:
-                if dataset_name not in ['new_orleans', 'philadelphia']:
+                if dataset_name in ['Alaska', 'Hawaii']:
                     optimizer = optim.Adam(params=list(poi_embed_model.parameters()) +
                                               # list(node_attn_model.parameters()) +
                                               list(geo_embed_model.parameters()) +
@@ -514,6 +540,22 @@ def train(args):
                                                 [task_weight1, task_weight2, task_weight3, task_weight4],
                                        lr=args.lr,
                                        weight_decay=args.weight_decay)
+                elif dataset_name in ['NYC', 'TKY', 'GB']:
+                    optimizer = optim.Adam(params=list(poi_embed_model.parameters()) +
+                                                  # list(node_attn_model.parameters()) +
+                                                  list(geo_embed_model.parameters()) +
+                                                  list(user_embed_model.parameters()) +
+                                                  list(image_embed_model.parameters()) +
+                                                  list(meta_embed_model.parameters()) +
+                                                  list(review_embed_model.parameters()) +
+                                                  list(time_embed_model.parameters()) +
+                                                  list(embed_fuse_multimodal_model.parameters()) +
+                                                  list(embed_fuse_model1.parameters()) +
+                                                  list(embed_fuse_model2.parameters()) +
+                                                  list(seq_model.parameters()) +
+                                                  [task_weight1, task_weight2, task_weight3, task_weight4],
+                                           lr=args.lr,
+                                           weight_decay=args.weight_decay)
                 else:
                     optimizer = optim.Adam(params=list(poi_embed_model.parameters()) +
                                                   # list(node_attn_model.parameters()) +
@@ -589,7 +631,7 @@ def train(args):
         criterion_time = maksed_mse_loss
 
     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, 'min', verbose=True, factor=args.lr_scheduler_factor)
+        optimizer, 'min', verbose=True, factor=args.lr_scheduler_factor) 
 
     # %% Tool functions for training
     def input_traj_to_embeddings(sample, poi_embeddings):
@@ -599,6 +641,8 @@ def train(args):
         if args.use_time:
             input_seq_time = [each[1] for each in sample[1]]
 
+
+        # User to embedding
         user_id = traj_id.split('_')[0]
         user_idx = user_id2idx_dict[user_id]
         input = torch.LongTensor([user_idx]).to(device=args.device)
@@ -647,7 +691,7 @@ def train(args):
 
         return input_seq_embed
 
-    def input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings, image_embeddings, meta_embeddings, review_embeddings, review_summary_embeddings):   # 将轨迹中的check-in进行embedding
+    def input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings, image_embeddings, meta_embeddings, review_embeddings, review_summary_embeddings):  
         # Parse sample
         traj_id = sample[0]
         input_seq = [each[0] for each in sample[1]]
@@ -660,12 +704,12 @@ def train(args):
         user_id = traj_id.split('_')[0]
         user_idx = user_id2idx_dict[user_id]
         input = torch.LongTensor([user_idx]).to(device=args.device)
-        user_embedding = user_embed_model(input)
+        user_embedding = user_embed_model(input)  
         user_embedding = torch.squeeze(user_embedding)
 
         # POI to embedding and fuse embeddings
         input_seq_embed = []
-        for idx in range(len(input_seq)):
+        for idx in range(len(input_seq)):  
             poi_embedding = poi_embeddings[input_seq[idx]]
             poi_embedding = torch.squeeze(poi_embedding).to(device=args.device)
 
@@ -676,12 +720,14 @@ def train(args):
             image_embedding = torch.squeeze(image_embedding).to(device=args.device)
             review_embedding = review_embeddings[input_seq[idx]]
             review_embedding = torch.squeeze(review_embedding).to(device=args.device)
-            if dataset_name not in ['new_orleans', 'philadelphia']:
+            if dataset_name in ['Alaska', 'Hawaii']:
                 meta_embedding = meta_embeddings[input_seq[idx]]
                 meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
                 review_summary_embedding = review_summary_embeddings[input_seq[idx]]
                 review_summary_embedding = torch.squeeze(review_summary_embedding).to(device=args.device)
-
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                meta_embedding = meta_embeddings[input_seq[idx]]
+                meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
 
             # Time to vector
             if args.use_time:
@@ -690,8 +736,11 @@ def train(args):
                 time_embedding = torch.squeeze(time_embedding).to(device=args.device)
 
             # Fuse user+poi embeds
-            if dataset_name not in ['new_orleans', 'philadelphia']:
+            if dataset_name in ['Alaska', 'Hawaii']:
                 multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding, review_embedding, review_summary_embedding)
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding,
+                                                                         review_embedding)
             else:
                 multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, review_embedding)
             fused_embedding1 = embed_fuse_model1(user_embedding, poi_embedding)
@@ -718,9 +767,11 @@ def train(args):
     user_embed_model = user_embed_model.to(device=args.device)
     image_embed_model = image_embed_model.to(device=args.device)
     review_embed_model = review_embed_model.to(device=args.device)
-    if dataset_name not in ['new_orleans', 'philadelphia']:
+    if dataset_name in ['Alaska', 'Hawaii']:
         meta_embed_model = meta_embed_model.to(device=args.device)
         review_summary_embed_model = review_summary_embed_model.to(device=args.device)
+    elif dataset_name in ['NYC', 'TKY', 'GB']:
+        meta_embed_model = meta_embed_model.to(device=args.device)
     embed_fuse_multimodal_model = embed_fuse_multimodal_model.to(device=args.device)
 
     if args.use_time:
@@ -783,6 +834,17 @@ def train(args):
     previous_val_ndcg20 = 0
     patience_times = 0
 
+    last_val_score = 0
+    last_val_epoch = 0
+    last_val_top1_acc = 0
+    last_val_top5_acc = 0
+    last_val_top10_acc = 0
+    last_val_top20_acc = 0
+    last_val_mAP20 = 0
+    last_val_ndcg20 = 0
+    last_val_mrr = 0
+
+
     def build_sim(context):
         context_norm = context.div(torch.norm(context, p=2, dim=-1, keepdim=True))
         sim = torch.mm(context_norm, context_norm.transpose(1, 0))
@@ -801,36 +863,39 @@ def train(args):
         L_norm = torch.mm(torch.mm(d_mat_inv_sqrt, adj), d_mat_inv_sqrt)
         return L_norm
 
-
     if args.use_A_plus:
         image_adj = build_sim(X_image)
         image_adj = build_knn_neighbourhood(image_adj, args.knn_k)
         review_adj = build_sim(X_review)
         review_adj = build_knn_neighbourhood(review_adj, args.knn_k)
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             meta_adj = build_sim(X_meta)
             meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
             review_summary_adj = build_sim(X_review_summary)
             review_summary_adj = build_knn_neighbourhood(review_summary_adj, args.knn_k)
-
-
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_adj = build_sim(X_meta)
+            meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
         image_adj[image_adj != image_adj] = 0
         review_adj[review_adj != review_adj] = 0
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             meta_adj[meta_adj != meta_adj] = 0
             review_summary_adj[review_summary_adj != review_summary_adj] = 0
-
-
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_adj[meta_adj != meta_adj] = 0
+        if dataset_name in ['Alaska', 'Hawaii']:
             multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
                              + args.multimodal_graph_weights[1] * meta_adj \
                              + args.multimodal_graph_weights[2] * review_adj \
                              + args.multimodal_graph_weights[3] * review_summary_adj
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+                             + args.multimodal_graph_weights[1] * meta_adj \
+                             + args.multimodal_graph_weights[2] * review_adj
         else:
             multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
                              + args.multimodal_graph_weights[2] * review_adj
         multimodal_adj = compute_normalized_laplacian(multimodal_adj)
-
 
         A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * multimodal_adj
         A = A_plus
@@ -845,9 +910,11 @@ def train(args):
 
         image_embed_model.train()
         review_embed_model.train()
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             meta_embed_model.train()
             review_summary_embed_model.train()
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_embed_model.train()
         embed_fuse_multimodal_model.train()
 
         if args.use_time:
@@ -876,7 +943,7 @@ def train(args):
         if args.geo_graph_enabled:
             train_batches_geo_loss_list = []
         train_batches_cat_loss_list = []
-        src_mask = seq_model.generate_square_subsequent_mask(args.batch).to(args.device)
+        src_mask = seq_model.generate_square_subsequent_mask(args.batch).to(args.device) 
         # Loop batch
         for b_idx, batch in enumerate(train_loader):
             if len(batch) != args.batch:
@@ -897,18 +964,20 @@ def train(args):
             if args.geo_graph_enabled:
                 geo_embeddings = geo_embed_model(X_geo, A_geo)
 
-            poi_embeddings = poi_embed_model(X, A)
+            poi_embeddings = poi_embed_model(X, A)  
             image_embeddings = image_embed_model(X_image, A)
             review_embeddings = review_embed_model(X_review, A)
-            if dataset_name not in ['new_orleans', 'philadelphia']:
+            if dataset_name in ['Alaska', 'Hawaii']:
                 meta_embeddings = meta_embed_model(X_meta, A)
                 review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
-
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                meta_embeddings = meta_embed_model(X_meta, A)
             # Convert input seq to embeddings
-            for sample in batch:
+            for sample in batch: 
+             
                 traj_id = sample[0]
-                input_seq = [each[0] for each in sample[1]]
-                label_seq = [each[0] for each in sample[2]]
+                input_seq = [each[0] for each in sample[1]] 
+                label_seq = [each[0] for each in sample[2]] 
                 if args.use_time:
                     input_seq_time = [each[1] for each in sample[1]]
                     label_seq_time = [each[1] for each in sample[2]]
@@ -916,21 +985,30 @@ def train(args):
                 label_seq_cats = [poi_idx2cat_idx_dict[each] for each in label_seq]
                 if args.geo_graph_enabled:
                     lable_seq_geos = [poi_idx2geo_idx_dict[each] for each in label_seq]
-                    if dataset_name not in ['new_orleans', 'philadelphia']:
+                    if dataset_name in ['Alaska', 'Hawaii']:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                            geo_embeddings, image_embeddings,
                                                                                     meta_embeddings,
                                                                                     review_embeddings,
-                                                                                    review_summary_embeddings))
+                                                                                    review_summary_embeddings))  
+                    elif dataset_name in ['NYC', 'TKY', 'GB']:
+                        input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
+                                                                                        geo_embeddings,
+                                                                                        image_embeddings,
+                                                                                        meta_embeddings,
+                                                                                        review_embeddings,
+                                                                                        review_embeddings))  
+                    else:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                                        geo_embeddings,
                                                                                        image_embeddings,
                                                                                         image_embeddings,
                                                                                        review_embeddings,
-                                                                                        review_embeddings))
-                    input_seq_embed = torch.stack(input_traj_to_embeddings(sample, poi_embeddings))
+                                                                                        review_embeddings))  
+                else:
+                    input_seq_embed = torch.stack(input_traj_to_embeddings(sample, poi_embeddings))  
                 batch_seq_embeds.append(input_seq_embed)
-                batch_seq_lens.append(len(input_seq))
+                batch_seq_lens.append(len(input_seq))  
                 batch_input_seqs.append(input_seq)
                 batch_seq_labels_poi.append(torch.LongTensor(label_seq))
                 if args.use_time:
@@ -941,7 +1019,7 @@ def train(args):
                     batch_seq_labels_geo.append(torch.LongTensor(lable_seq_geos))
 
             # Pad seqs for batch training
-            batch_padded = pad_sequence(batch_seq_embeds, batch_first=True, padding_value=-1)
+            batch_padded = pad_sequence(batch_seq_embeds, batch_first=True, padding_value=-1) 
             label_padded_poi = pad_sequence(batch_seq_labels_poi, batch_first=True, padding_value=-1)
             if args.use_time:
                 label_padded_time = pad_sequence(batch_seq_labels_time, batch_first=True, padding_value=-1)
@@ -951,7 +1029,7 @@ def train(args):
                 label_padded_geo = pad_sequence(batch_seq_labels_geo, batch_first=True, padding_value=-1)
 
             # Feedforward
-            x = batch_padded.to(device=args.device, dtype=torch.float)
+            x = batch_padded.to(device=args.device, dtype=torch.float)  
             y_poi = label_padded_poi.to(device=args.device, dtype=torch.long)
             if args.use_time:
                 y_time = label_padded_time.to(device=args.device, dtype=torch.float)
@@ -977,8 +1055,9 @@ def train(args):
                 loss_geo = criterion_geo(y_pred_geo.transpose(1, 2), y_geo)
 
             if args.cat_loss_type == 'id_loss':
-                loss_cat = criterion_cat(y_pred_cat.transpose(1, 2), y_cat)
+                loss_cat = criterion_cat(y_pred_cat.transpose(1, 2), y_cat) 
             elif args.cat_loss_type == 'embedding_loss':
+
                 mask = (y_cat != -1)
 
                 y_cat_filtered = y_cat.masked_select(mask)
@@ -994,17 +1073,35 @@ def train(args):
                 probabilities_true_flat = probabilities_true.view(-1, y_pred_cat.size(-1))
                 probabilities_pred_flat = probabilities_pred.view(-1, y_pred_cat.size(-1))
 
+
                 loss_cat = F.kl_div(probabilities_pred_flat.log(), probabilities_true_flat, reduction='batchmean')
 
 
  # Final loss
             if args.multi_loss_weight:
                 if args.reg_enabled:
-                    loss = precision1 * loss_poi + task_weight1 \
-                           + precision2 * loss_time + task_weight2 \
-                           + precision3 * loss_cat + task_weight3 \
-                           + precision4 * loss_geo + task_weight4 \
-                           + args.reg_weight * l2_regularization
+                    if args.loss_time_enabled and args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision2 * loss_time + task_weight2 \
+                               + precision3 * loss_cat + task_weight3 \
+                               + precision4 * loss_geo + task_weight4 \
+                               + args.reg_weight * l2_regularization
+                    elif not args.loss_time_enabled and args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision3 * loss_cat + task_weight3 \
+                               + precision4 * loss_geo + task_weight4 \
+                               + args.reg_weight * l2_regularization
+                    elif args.loss_time_enabled and not args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision2 * loss_time + task_weight2 \
+                               + precision4 * loss_geo + task_weight4 \
+                               + args.reg_weight * l2_regularization
+                    elif args.loss_time_enabled and args.loss_cat_enabled and not args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision2 * loss_time + task_weight2 \
+                               + precision3 * loss_cat + task_weight3 \
+                               + args.reg_weight * l2_regularization
+
                 else:
                     if args.loss_time_enabled and args.loss_cat_enabled and args.loss_geo_enabled:
                         loss = precision1 * loss_poi + task_weight1 \
@@ -1015,6 +1112,12 @@ def train(args):
                         loss = precision1 * loss_poi + task_weight1 \
                                + precision3 * loss_cat + task_weight3 \
                                + precision4 * loss_geo + task_weight4
+                    elif not args.loss_time_enabled and not args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision4 * loss_geo + task_weight4
+                    elif not args.loss_time_enabled and args.loss_cat_enabled and not args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision3 * loss_cat + task_weight3
                     elif args.loss_time_enabled and not args.loss_cat_enabled and args.loss_geo_enabled:
                         loss = precision1 * loss_poi + task_weight1 \
                                + precision2 * loss_time + task_weight2 \
@@ -1030,7 +1133,8 @@ def train(args):
                     loss = loss_poi + loss_time * args.time_loss_weight + loss_cat * args.cat_loss_weight
             optimizer.zero_grad()
             loss.backward(retain_graph=True)
-            max_norm = 1.0
+
+            max_norm = 1.0 
             torch.nn.utils.clip_grad_norm_([task_weight3], max_norm)
 
             optimizer.step()
@@ -1051,12 +1155,12 @@ def train(args):
                 batch_pred_geos = y_pred_geo.detach().cpu().numpy()
             batch_pred_cats = y_pred_cat.detach().cpu().numpy()
             for label_pois, pred_pois, seq_len in zip(batch_label_pois, batch_pred_pois, batch_seq_lens):
-                label_pois = label_pois[:seq_len]  # shape: (seq_len, )
-                pred_pois = pred_pois[:seq_len, :]  # shape: (seq_len, num_poi)
+                label_pois = label_pois[:seq_len] 
+                pred_pois = pred_pois[:seq_len, :]  
                 top1_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=1)
                 top5_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=5)
                 top10_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=10)
-                top20_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=20)
+                top20_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=20)   
                 mAP20 += mAP_metric_last_timestep(label_pois, pred_pois, k=20)
                 ndcg20 += ndcg_last_timestep(label_pois, pred_pois, k=20)
                 mrr += MRR_metric_last_timestep(label_pois, pred_pois)
@@ -1133,9 +1237,11 @@ def train(args):
         user_embed_model.eval()
         image_embed_model.eval()
         review_embed_model.eval()
-        if dataset_name not in ['new_orleans', 'philadelphia']:
+        if dataset_name in ['Alaska', 'Hawaii']:
             meta_embed_model.eval()
             review_summary_embed_model.eval()
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_embed_model.eval()
         embed_fuse_multimodal_model.eval()
         if args.use_time:
             time_embed_model.eval()
@@ -1186,13 +1292,13 @@ def train(args):
             poi_embeddings = poi_embed_model(X, A)
             image_embeddings = image_embed_model(X_image, A)
             review_embeddings = review_embed_model(X_review, A)
-            if dataset_name not in ['new_orleans', 'philadelphia']:
+            if dataset_name in ['Alaska', 'Hawaii']:
                 meta_embeddings = meta_embed_model(X_meta, A)
                 review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
-
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                meta_embeddings = meta_embed_model(X_meta, A)
             # Convert input seq to embeddings
             for sample in batch:
-                # sample[0]: traj_id, sample[1]: input_seq, sample[2]: label_seq
                 traj_id = sample[0]
                 input_seq = [each[0] for each in sample[1]]
                 label_seq = [each[0] for each in sample[2]]
@@ -1202,10 +1308,15 @@ def train(args):
                 label_seq_cats = [poi_idx2cat_idx_dict[each] for each in label_seq]
                 if args.geo_graph_enabled:
                     label_seq_geos = [poi_idx2geo_idx_dict[each] for each in label_seq]
-                    if dataset_name not in ['new_orleans', 'philadelphia']:
+                    if dataset_name in ['Alaska', 'Hawaii']:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
                                                                                     image_embeddings, meta_embeddings,
                                                                                     review_embeddings, review_summary_embeddings))
+                    elif dataset_name in ['NYC', 'TKY', 'GB']:
+                        input_seq_embed = torch.stack(
+                            input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
+                                                              image_embeddings, meta_embeddings,
+                                                              review_embeddings, review_embeddings))
                     else:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
                                                                                     image_embeddings, image_embeddings,
@@ -1243,14 +1354,15 @@ def train(args):
             else:
                 y_pred_poi, y_pred_time, y_pred_cat = seq_model(x, src_mask)
 
-            # Graph Attention adjusted prob
-            # y_pred_poi_adjusted = adjust_pred_prob_by_graph(y_pred_poi)
             y_pred_poi_adjusted = y_pred_poi
 
             # Calculate loss
             loss_poi = criterion_poi(y_pred_poi_adjusted.transpose(1, 2), y_poi)
 
             if args.use_time:
+
+                if y_pred_time.shape[0] == 1:
+                    break
                 loss_time = criterion_time(torch.squeeze(y_pred_time), y_time)
             if args.geo_graph_enabled:
                 loss_geo = criterion_geo(y_pred_geo.transpose(1, 2), y_geo)
@@ -1277,11 +1389,28 @@ def train(args):
 
             if args.multi_loss_weight:
                 if args.reg_enabled:
-                    loss = precision1.item() * loss_poi + task_weight1.item() \
-                           + precision2.item() * loss_time + task_weight2.item() \
-                           + precision3.item() * loss_cat + task_weight3.item() \
-                           + precision4.item() * loss_geo + task_weight4.item() \
+                    if args.loss_time_enabled and args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision2 * loss_time + task_weight2 \
+                               + precision3 * loss_cat + task_weight3 \
+                               + precision4 * loss_geo + task_weight4 \
                            + args.reg_weight * l2_regularization.item()
+                    elif not args.loss_time_enabled and args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision3 * loss_cat + task_weight3 \
+                               + precision4 * loss_geo + task_weight4 \
+                           + args.reg_weight * l2_regularization.item()
+                    elif args.loss_time_enabled and not args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision2 * loss_time + task_weight2 \
+                               + precision4 * loss_geo + task_weight4 \
+                           + args.reg_weight * l2_regularization.item()
+                    elif args.loss_time_enabled and args.loss_cat_enabled and not args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision2 * loss_time + task_weight2 \
+                               + precision3 * loss_cat + task_weight3 \
+                           + args.reg_weight * l2_regularization.item()
+
                 else:
                     if args.loss_time_enabled and args.loss_cat_enabled and args.loss_geo_enabled:
                         loss = precision1 * loss_poi + task_weight1 \
@@ -1292,6 +1421,12 @@ def train(args):
                         loss = precision1 * loss_poi + task_weight1 \
                                + precision3 * loss_cat + task_weight3 \
                                + precision4 * loss_geo + task_weight4
+                    elif not args.loss_time_enabled and not args.loss_cat_enabled and args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision4 * loss_geo + task_weight4
+                    elif not args.loss_time_enabled and args.loss_cat_enabled and not args.loss_geo_enabled:
+                        loss = precision1 * loss_poi + task_weight1 \
+                               + precision3 * loss_cat + task_weight3
                     elif args.loss_time_enabled and not args.loss_cat_enabled and args.loss_geo_enabled:
                         loss = precision1 * loss_poi + task_weight1 \
                                + precision2 * loss_time + task_weight2 \
@@ -1310,7 +1445,7 @@ def train(args):
             top1_acc = 0
             top5_acc = 0
             top10_acc = 0
-            top20_acc = 0  # 轨迹
+            top20_acc = 0 
             mAP20 = 0
             ndcg20 = 0
             mrr = 0
@@ -1322,8 +1457,8 @@ def train(args):
             if args.geo_graph_enabled:
                 batch_pred_geos = y_pred_geo.detach().cpu().numpy()
             for label_pois, pred_pois, seq_len in zip(batch_label_pois, batch_pred_pois, batch_seq_lens):
-                label_pois = label_pois[:seq_len]  # shape: (seq_len, )
-                pred_pois = pred_pois[:seq_len, :]  # shape: (seq_len, num_poi)
+                label_pois = label_pois[:seq_len] 
+                pred_pois = pred_pois[:seq_len, :]  
                 top1_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=1)
                 top5_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=5)
                 top10_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=10)
@@ -1494,8 +1629,6 @@ def train(args):
         previous_val_top20_acc = epoch_val_top20_acc
         previous_val_ndcg20 = epoch_val_ndcg20
 
-
-
         # Learning rate schuduler
         lr_scheduler.step(monitor_loss)
 
@@ -1598,8 +1731,6 @@ def train(args):
                 'user_embed_state_dict': user_embed_model.state_dict(),
                 'time_embed_state_dict': time_embed_model.state_dict(),
                 'cat_embed_state_dict': cat_embed_model.state_dict(),
-                # 'embed_fuse1_state_dict': embed_fuse_model1.state_dict(),
-                # 'embed_fuse2_state_dict': embed_fuse_model2.state_dict(),
                 'seq_model_state_dict': seq_model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'user_id2idx_dict': user_id2idx_dict,
