@@ -17,9 +17,9 @@ This is the PyTorch implementation of the paper "MMPOI: A Multi-Modal Content-Aw
 
 ## Raw Dataset 
 
-NYC: https://drive.google.com/file/d/1v0BvKs46ixUf1CgjRlk9MY5JsFL7ILxC/view?usp=sharing![image](https://github.com/zzmylq/MMPOI/assets/49523147/e794ebf0-9e9d-46c8-aef8-1b47333ba5de)
+NYC: https://drive.google.com/file/d/1v0BvKs46ixUf1CgjRlk9MY5JsFL7ILxC/view?usp=sharing
 
-TKY: https://drive.google.com/file/d/1Cpnp2iEmHGfvUkOL-8myeQmyOuq4LmV7/view?usp=sharing![image](https://github.com/zzmylq/MMPOI/assets/49523147/5d8fcdfb-1913-4813-81cc-499b54c3c2c4)
+TKY: https://drive.google.com/file/d/1Cpnp2iEmHGfvUkOL-8myeQmyOuq4LmV7/view?usp=sharing
 
 Yelp: https://www.yelp.com/dataset
 
