@@ -21,8 +21,6 @@ NYC: https://drive.google.com/file/d/1v0BvKs46ixUf1CgjRlk9MY5JsFL7ILxC/view?usp=
 
 TKY: https://drive.google.com/file/d/1Cpnp2iEmHGfvUkOL-8myeQmyOuq4LmV7/view?usp=sharing
 
-Yelp: https://www.yelp.com/dataset
-
 Please cite our paper if you use these datasets, thank you very much!
 
 ## Citation
