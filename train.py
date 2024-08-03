@@ -749,8 +749,9 @@ def train(args):
                 fused_embedding2 = embed_fuse_model2(time_embedding, geo_embedding)
             else:
                 fused_embedding2 = embed_fuse_model2(geo_embedding)
-
-            concat_embedding = torch.cat((fused_embedding1, fused_embedding2), dim=-1)
+                
+            concat_embedding = torch.cat((fused_embedding1, fused_embedding2, multimodal_fused_embedding), dim=-1)
+            # concat_embedding = torch.cat((fused_embedding1, fused_embedding2), dim=-1)
 
             # Save final embed
             input_seq_embed.append(concat_embedding)
