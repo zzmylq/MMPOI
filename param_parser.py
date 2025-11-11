@@ -10,7 +10,7 @@ else:
     device = torch.device('cpu')
 
 def parameter_parser():
-    parser = argparse.ArgumentParser(description="Run GETNext.")
+    parser = argparse.ArgumentParser(description="Run MMPOI.")
 
     '''————————————————major parameters————————————————'''
     parser.add_argument('--seed',
