@@ -25,7 +25,9 @@ from utils import increment_path, calculate_laplacian_matrix, zipdir, top_k_acc_
     mAP_metric_last_timestep,  ndcg_last_timestep, MRR_metric_last_timestep, maksed_mse_loss
 
 from sentence_transformers import SentenceTransformer
-import geohash
+
+from Geohash import geohash
+
 import torch.nn.functional as F
 from collections import OrderedDict
 
@@ -442,12 +444,12 @@ def train(args):
         cat_embed_model = CategoryEmbeddings(num_cats, args.cat_embed_dim, one_hot_rlt)
 
     # %% Model5: Embedding fusion models
-    if dataset_name in ['Alaska', 'Hawaii']:
-        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 4)
-    elif dataset_name in ['NYC', 'TKY', 'GB']:
-        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 3)
-    else:
-        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 2)
+    # if dataset_name in ['Alaska', 'Hawaii']:
+    #     embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 4)
+    # elif dataset_name in ['NYC', 'TKY', 'GB']:
+    #     embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 3)
+    # else:
+    #     embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 2)
 
     embed_fuse_model1 = FuseEmbeddings(args.user_embed_dim, args.poi_embed_dim)
 
@@ -528,12 +530,12 @@ def train(args):
                                               # list(node_attn_model.parameters()) +
                                               list(geo_embed_model.parameters()) +
                                               list(user_embed_model.parameters()) +
-                                              list(image_embed_model.parameters()) +
-                                              list(meta_embed_model.parameters()) +
-                                              list(review_embed_model.parameters()) +
-                                              list(review_summary_embed_model.parameters()) +
+                                            #   list(image_embed_model.parameters()) +
+                                            #   list(meta_embed_model.parameters()) +
+                                            #   list(review_embed_model.parameters()) +
+                                            #   list(review_summary_embed_model.parameters()) +
                                               list(time_embed_model.parameters()) +
-                                              list(embed_fuse_multimodal_model.parameters()) +
+                                            #   list(embed_fuse_multimodal_model.parameters()) +
                                               list(embed_fuse_model1.parameters()) +
                                               list(embed_fuse_model2.parameters()) +
                                               list(seq_model.parameters()) +
@@ -545,11 +547,11 @@ def train(args):
                                                   # list(node_attn_model.parameters()) +
                                                   list(geo_embed_model.parameters()) +
                                                   list(user_embed_model.parameters()) +
-                                                  list(image_embed_model.parameters()) +
-                                                  list(meta_embed_model.parameters()) +
-                                                  list(review_embed_model.parameters()) +
+                                                #   list(image_embed_model.parameters()) +
+                                                #   list(meta_embed_model.parameters()) +
+                                                #   list(review_embed_model.parameters()) +
                                                   list(time_embed_model.parameters()) +
-                                                  list(embed_fuse_multimodal_model.parameters()) +
+                                                #   list(embed_fuse_multimodal_model.parameters()) +
                                                   list(embed_fuse_model1.parameters()) +
                                                   list(embed_fuse_model2.parameters()) +
                                                   list(seq_model.parameters()) +
@@ -561,10 +563,10 @@ def train(args):
                                                   # list(node_attn_model.parameters()) +
                                                   list(geo_embed_model.parameters()) +
                                                   list(user_embed_model.parameters()) +
-                                                  list(image_embed_model.parameters()) +
-                                                  list(review_embed_model.parameters()) +
+                                                #   list(image_embed_model.parameters()) +
+                                                #   list(review_embed_model.parameters()) +
                                                   list(time_embed_model.parameters()) +
-                                                  list(embed_fuse_multimodal_model.parameters()) +
+                                                #   list(embed_fuse_multimodal_model.parameters()) +
                                                   list(embed_fuse_model1.parameters()) +
                                                   list(embed_fuse_model2.parameters()) +
                                                   list(seq_model.parameters()) +
@@ -576,12 +578,12 @@ def train(args):
                                               # list(node_attn_model.parameters()) +
                                               list(geo_embed_model.parameters()) +
                                               list(user_embed_model.parameters()) +
-                                              list(image_embed_model.parameters()) +
-                                              list(meta_embed_model.parameters()) +
-                                              list(review_embed_model.parameters()) +
-                                              list(review_summary_embed_model.parameters()) +
+                                            #   list(image_embed_model.parameters()) +
+                                            #   list(meta_embed_model.parameters()) +
+                                            #   list(review_embed_model.parameters()) +
+                                            #   list(review_summary_embed_model.parameters()) +
                                               list(time_embed_model.parameters()) +
-                                              list(embed_fuse_multimodal_model.parameters()) +
+                                            #   list(embed_fuse_multimodal_model.parameters()) +
                                               list(embed_fuse_model1.parameters()) +
                                               list(embed_fuse_model2.parameters()) +
                                               list(seq_model.parameters()),
@@ -691,7 +693,9 @@ def train(args):
 
         return input_seq_embed
 
-    def input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings, image_embeddings, meta_embeddings, review_embeddings, review_summary_embeddings):  
+    def input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings, 
+    # image_embeddings, meta_embeddings, review_embeddings, review_summary_embeddings
+    ):  
         # Parse sample
         traj_id = sample[0]
         input_seq = [each[0] for each in sample[1]]
@@ -716,18 +720,18 @@ def train(args):
             geo_embedding = geo_embeddings[input_seq_geo[idx]]
             geo_embedding = torch.squeeze(geo_embedding).to(device=args.device)
 
-            image_embedding = image_embeddings[input_seq[idx]]
-            image_embedding = torch.squeeze(image_embedding).to(device=args.device)
-            review_embedding = review_embeddings[input_seq[idx]]
-            review_embedding = torch.squeeze(review_embedding).to(device=args.device)
-            if dataset_name in ['Alaska', 'Hawaii']:
-                meta_embedding = meta_embeddings[input_seq[idx]]
-                meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
-                review_summary_embedding = review_summary_embeddings[input_seq[idx]]
-                review_summary_embedding = torch.squeeze(review_summary_embedding).to(device=args.device)
-            elif dataset_name in ['NYC', 'TKY', 'GB']:
-                meta_embedding = meta_embeddings[input_seq[idx]]
-                meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
+            # image_embedding = image_embeddings[input_seq[idx]]
+            # image_embedding = torch.squeeze(image_embedding).to(device=args.device)
+            # review_embedding = review_embeddings[input_seq[idx]]
+            # review_embedding = torch.squeeze(review_embedding).to(device=args.device)
+            # if dataset_name in ['Alaska', 'Hawaii']:
+            #     meta_embedding = meta_embeddings[input_seq[idx]]
+            #     meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
+            #     review_summary_embedding = review_summary_embeddings[input_seq[idx]]
+            #     review_summary_embedding = torch.squeeze(review_summary_embedding).to(device=args.device)
+            # elif dataset_name in ['NYC', 'TKY', 'GB']:
+            #     meta_embedding = meta_embeddings[input_seq[idx]]
+            #     meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
 
             # Time to vector
             if args.use_time:
@@ -736,13 +740,13 @@ def train(args):
                 time_embedding = torch.squeeze(time_embedding).to(device=args.device)
 
             # Fuse user+poi embeds
-            if dataset_name in ['Alaska', 'Hawaii']:
-                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding, review_embedding, review_summary_embedding)
-            elif dataset_name in ['NYC', 'TKY', 'GB']:
-                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding,
-                                                                         review_embedding)
-            else:
-                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, review_embedding)
+            # if dataset_name in ['Alaska', 'Hawaii']:
+            #     multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding, review_embedding, review_summary_embedding)
+            # elif dataset_name in ['NYC', 'TKY', 'GB']:
+            #     multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding,
+            #                                                              review_embedding)
+            # else:
+            #     multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, review_embedding)
             fused_embedding1 = embed_fuse_model1(user_embedding, poi_embedding)
 
             if args.use_time:
@@ -750,8 +754,8 @@ def train(args):
             else:
                 fused_embedding2 = embed_fuse_model2(geo_embedding)
                 
-            concat_embedding = torch.cat((fused_embedding1, fused_embedding2, multimodal_fused_embedding), dim=-1)
-            # concat_embedding = torch.cat((fused_embedding1, fused_embedding2), dim=-1)
+            # concat_embedding = torch.cat((fused_embedding1, fused_embedding2, multimodal_fused_embedding), dim=-1)
+            concat_embedding = torch.cat((fused_embedding1, fused_embedding2), dim=-1)
 
             # Save final embed
             input_seq_embed.append(concat_embedding)
@@ -766,14 +770,14 @@ def train(args):
     poi_embed_model = poi_embed_model.to(device=args.device)
     # node_attn_model = node_attn_model.to(device=args.device)
     user_embed_model = user_embed_model.to(device=args.device)
-    image_embed_model = image_embed_model.to(device=args.device)
-    review_embed_model = review_embed_model.to(device=args.device)
-    if dataset_name in ['Alaska', 'Hawaii']:
-        meta_embed_model = meta_embed_model.to(device=args.device)
-        review_summary_embed_model = review_summary_embed_model.to(device=args.device)
-    elif dataset_name in ['NYC', 'TKY', 'GB']:
-        meta_embed_model = meta_embed_model.to(device=args.device)
-    embed_fuse_multimodal_model = embed_fuse_multimodal_model.to(device=args.device)
+    # image_embed_model = image_embed_model.to(device=args.device)
+    # review_embed_model = review_embed_model.to(device=args.device)
+    # if dataset_name in ['Alaska', 'Hawaii']:
+    #     meta_embed_model = meta_embed_model.to(device=args.device)
+    #     review_summary_embed_model = review_summary_embed_model.to(device=args.device)
+    # elif dataset_name in ['NYC', 'TKY', 'GB']:
+    #     meta_embed_model = meta_embed_model.to(device=args.device)
+    # embed_fuse_multimodal_model = embed_fuse_multimodal_model.to(device=args.device)
 
     if args.use_time:
         time_embed_model = time_embed_model.to(device=args.device)
@@ -795,7 +799,10 @@ def train(args):
     train_epochs_top10_acc_list = []
     train_epochs_top20_acc_list = []
     train_epochs_mAP20_list = []
-    train_epochs_ndcg20_list = []
+    train_epochs_ndcg1_list = [] 
+    train_epochs_ndcg5_list = [] 
+    train_epochs_ndcg10_list = [] 
+    train_epochs_ndcg20_list = [] 
     train_epochs_mrr_list = []
     train_epochs_loss_list = []
     train_epochs_poi_loss_list = []
@@ -809,6 +816,9 @@ def train(args):
     val_epochs_top10_acc_list = []
     val_epochs_top20_acc_list = []
     val_epochs_mAP20_list = []
+    val_epochs_ndcg1_list = []
+    val_epochs_ndcg5_list = []
+    val_epochs_ndcg10_list = []
     val_epochs_ndcg20_list = []
     val_epochs_mrr_list = []
     val_epochs_loss_list = []
@@ -829,6 +839,9 @@ def train(args):
     best_val_top10_acc = 0
     best_val_top20_acc = 0
     best_val_mAP20 = 0
+    best_val_ndcg1 = 0
+    best_val_ndcg5 = 0
+    best_val_ndcg10 = 0
     best_val_ndcg20 = 0
     best_val_mrr = 0
     previous_val_top20_acc = 0
@@ -842,6 +855,9 @@ def train(args):
     last_val_top10_acc = 0
     last_val_top20_acc = 0
     last_val_mAP20 = 0
+    last_val_ndcg1 = 0
+    last_val_ndcg5 = 0
+    last_val_ndcg10 = 0
     last_val_ndcg20 = 0
     last_val_mrr = 0
 
@@ -864,42 +880,43 @@ def train(args):
         L_norm = torch.mm(torch.mm(d_mat_inv_sqrt, adj), d_mat_inv_sqrt)
         return L_norm
 
-    if args.use_A_plus:
-        image_adj = build_sim(X_image)
-        image_adj = build_knn_neighbourhood(image_adj, args.knn_k)
-        review_adj = build_sim(X_review)
-        review_adj = build_knn_neighbourhood(review_adj, args.knn_k)
-        if dataset_name in ['Alaska', 'Hawaii']:
-            meta_adj = build_sim(X_meta)
-            meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
-            review_summary_adj = build_sim(X_review_summary)
-            review_summary_adj = build_knn_neighbourhood(review_summary_adj, args.knn_k)
-        elif dataset_name in ['NYC', 'TKY', 'GB']:
-            meta_adj = build_sim(X_meta)
-            meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
-        image_adj[image_adj != image_adj] = 0
-        review_adj[review_adj != review_adj] = 0
-        if dataset_name in ['Alaska', 'Hawaii']:
-            meta_adj[meta_adj != meta_adj] = 0
-            review_summary_adj[review_summary_adj != review_summary_adj] = 0
-        elif dataset_name in ['NYC', 'TKY', 'GB']:
-            meta_adj[meta_adj != meta_adj] = 0
-        if dataset_name in ['Alaska', 'Hawaii']:
-            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
-                             + args.multimodal_graph_weights[1] * meta_adj \
-                             + args.multimodal_graph_weights[2] * review_adj \
-                             + args.multimodal_graph_weights[3] * review_summary_adj
-        elif dataset_name in ['NYC', 'TKY', 'GB']:
-            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
-                             + args.multimodal_graph_weights[1] * meta_adj \
-                             + args.multimodal_graph_weights[2] * review_adj
-        else:
-            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
-                             + args.multimodal_graph_weights[2] * review_adj
-        multimodal_adj = compute_normalized_laplacian(multimodal_adj)
+    # if args.use_A_plus:
+        # image_adj = build_sim(X_image)
+        # image_adj = build_knn_neighbourhood(image_adj, args.knn_k)
+        # review_adj = build_sim(X_review)
+        # review_adj = build_knn_neighbourhood(review_adj, args.knn_k)
+        # if dataset_name in ['Alaska', 'Hawaii']:
+        #     meta_adj = build_sim(X_meta)
+        #     meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
+        #     review_summary_adj = build_sim(X_review_summary)
+        #     review_summary_adj = build_knn_neighbourhood(review_summary_adj, args.knn_k)
+        # elif dataset_name in ['NYC', 'TKY', 'GB']:
+        #     meta_adj = build_sim(X_meta)
+        #     meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
+        # image_adj[image_adj != image_adj] = 0
+        # review_adj[review_adj != review_adj] = 0
+        # if dataset_name in ['Alaska', 'Hawaii']:
+        #     meta_adj[meta_adj != meta_adj] = 0
+        #     review_summary_adj[review_summary_adj != review_summary_adj] = 0
+        # elif dataset_name in ['NYC', 'TKY', 'GB']:
+        #     meta_adj[meta_adj != meta_adj] = 0
+        # if dataset_name in ['Alaska', 'Hawaii']:
+        #     multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+        #                      + args.multimodal_graph_weights[1] * meta_adj \
+        #                      + args.multimodal_graph_weights[2] * review_adj \
+        #                      + args.multimodal_graph_weights[3] * review_summary_adj
+        # elif dataset_name in ['NYC', 'TKY', 'GB']:
+        #     multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+        #                      + args.multimodal_graph_weights[1] * meta_adj \
+        #                      + args.multimodal_graph_weights[2] * review_adj
+        # else:
+        #     multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+        #                      + args.multimodal_graph_weights[2] * review_adj
+        # multimodal_adj = compute_normalized_laplacian(multimodal_adj)
 
-        A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * multimodal_adj
-        A = A_plus
+        # A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * multimodal_adj
+        # A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * A
+        # A = A_plus
 
 
     for epoch in range(args.epochs):
@@ -909,14 +926,14 @@ def train(args):
         # node_attn_model.train()
         user_embed_model.train()
 
-        image_embed_model.train()
-        review_embed_model.train()
-        if dataset_name in ['Alaska', 'Hawaii']:
-            meta_embed_model.train()
-            review_summary_embed_model.train()
-        elif dataset_name in ['NYC', 'TKY', 'GB']:
-            meta_embed_model.train()
-        embed_fuse_multimodal_model.train()
+        # image_embed_model.train()
+        # review_embed_model.train()
+        # if dataset_name in ['Alaska', 'Hawaii']:
+        #     meta_embed_model.train()
+        #     review_summary_embed_model.train()
+        # elif dataset_name in ['NYC', 'TKY', 'GB']:
+        #     meta_embed_model.train()
+        # embed_fuse_multimodal_model.train()
 
         if args.use_time:
             time_embed_model.train()
@@ -935,6 +952,9 @@ def train(args):
         train_batches_top10_acc_list = []
         train_batches_top20_acc_list = []
         train_batches_mAP20_list = []
+        train_batches_ndcg1_list = []
+        train_batches_ndcg5_list = []
+        train_batches_ndcg10_list = []
         train_batches_ndcg20_list = []
         train_batches_mrr_list = []
         train_batches_loss_list = []
@@ -966,13 +986,13 @@ def train(args):
                 geo_embeddings = geo_embed_model(X_geo, A_geo)
 
             poi_embeddings = poi_embed_model(X, A)  
-            image_embeddings = image_embed_model(X_image, A)
-            review_embeddings = review_embed_model(X_review, A)
-            if dataset_name in ['Alaska', 'Hawaii']:
-                meta_embeddings = meta_embed_model(X_meta, A)
-                review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
-            elif dataset_name in ['NYC', 'TKY', 'GB']:
-                meta_embeddings = meta_embed_model(X_meta, A)
+            # image_embeddings = image_embed_model(X_image, A)
+            # review_embeddings = review_embed_model(X_review, A)
+            # if dataset_name in ['Alaska', 'Hawaii']:
+            #     meta_embeddings = meta_embed_model(X_meta, A)
+            #     review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
+            # elif dataset_name in ['NYC', 'TKY', 'GB']:
+            #     meta_embeddings = meta_embed_model(X_meta, A)
             # Convert input seq to embeddings
             for sample in batch: 
              
@@ -988,24 +1008,28 @@ def train(args):
                     lable_seq_geos = [poi_idx2geo_idx_dict[each] for each in label_seq]
                     if dataset_name in ['Alaska', 'Hawaii']:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
-                                                                           geo_embeddings, image_embeddings,
-                                                                                    meta_embeddings,
-                                                                                    review_embeddings,
-                                                                                    review_summary_embeddings))  
+                                                                                    geo_embeddings, 
+                                                                                    # image_embeddings,
+                                                                                    # meta_embeddings,
+                                                                                    # review_embeddings,
+                                                                                    # review_summary_embeddings
+                                                                                    ))  
                     elif dataset_name in ['NYC', 'TKY', 'GB']:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                                         geo_embeddings,
-                                                                                        image_embeddings,
-                                                                                        meta_embeddings,
-                                                                                        review_embeddings,
-                                                                                        review_embeddings))  
+                                                                                        # image_embeddings,
+                                                                                        # meta_embeddings,
+                                                                                        # review_embeddings,
+                                                                                        # review_embeddings
+                                                                                        ))  
                     else:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                                        geo_embeddings,
-                                                                                       image_embeddings,
-                                                                                        image_embeddings,
-                                                                                       review_embeddings,
-                                                                                        review_embeddings))  
+                                                                                    #    image_embeddings,
+                                                                                    #     image_embeddings,
+                                                                                    #    review_embeddings,
+                                                                                    #     review_embeddings
+                                                                                        ))  
                 else:
                     input_seq_embed = torch.stack(input_traj_to_embeddings(sample, poi_embeddings))  
                 batch_seq_embeds.append(input_seq_embed)
@@ -1136,7 +1160,7 @@ def train(args):
             loss.backward(retain_graph=True)
 
             max_norm = 1.0 
-            torch.nn.utils.clip_grad_norm_([task_weight3], max_norm)
+            # torch.nn.utils.clip_grad_norm_([task_weight3], max_norm)
 
             optimizer.step()
 
@@ -1146,6 +1170,9 @@ def train(args):
             top10_acc = 0
             top20_acc = 0
             mAP20 = 0
+            ndcg1 = 0
+            ndcg5 = 0
+            ndcg10 = 0
             ndcg20 = 0
             mrr = 0
             batch_label_pois = y_poi.detach().cpu().numpy()
@@ -1163,14 +1190,22 @@ def train(args):
                 top10_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=10)
                 top20_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=20)   
                 mAP20 += mAP_metric_last_timestep(label_pois, pred_pois, k=20)
+                ndcg1 += ndcg_last_timestep(label_pois, pred_pois, k=1)
+                ndcg5 += ndcg_last_timestep(label_pois, pred_pois, k=5)
+                ndcg10 += ndcg_last_timestep(label_pois, pred_pois, k=10)
                 ndcg20 += ndcg_last_timestep(label_pois, pred_pois, k=20)
+                
                 mrr += MRR_metric_last_timestep(label_pois, pred_pois)
             train_batches_top1_acc_list.append(top1_acc / len(batch_label_pois))
             train_batches_top5_acc_list.append(top5_acc / len(batch_label_pois))
             train_batches_top10_acc_list.append(top10_acc / len(batch_label_pois))
             train_batches_top20_acc_list.append(top20_acc / len(batch_label_pois))
             train_batches_mAP20_list.append(mAP20 / len(batch_label_pois))
+            train_batches_ndcg1_list.append(ndcg1 / len(batch_label_pois))
+            train_batches_ndcg5_list.append(ndcg5 / len(batch_label_pois))
+            train_batches_ndcg10_list.append(ndcg10 / len(batch_label_pois))
             train_batches_ndcg20_list.append(ndcg20 / len(batch_label_pois))
+            
             train_batches_mrr_list.append(mrr / len(batch_label_pois))
             train_batches_loss_list.append(loss.detach().cpu().numpy())
             train_batches_poi_loss_list.append(loss_poi.detach().cpu().numpy())
@@ -1196,7 +1231,11 @@ def train(args):
                              f'train_move_top10_acc:{np.mean(train_batches_top10_acc_list):.4f}\n'
                              f'train_move_top20_acc:{np.mean(train_batches_top20_acc_list):.4f}\n'
                              f'train_move_mAP20:{np.mean(train_batches_mAP20_list):.4f}\n'
+                             f'train_move_ndcg1:{np.mean(train_batches_ndcg1_list):.4f}\n'
+                             f'train_move_ndcg5:{np.mean(train_batches_ndcg5_list):.4f}\n'
+                             f'train_move_ndcg10:{np.mean(train_batches_ndcg10_list):.4f}\n'
                              f'train_move_ndcg20:{np.mean(train_batches_ndcg20_list):.4f}\n'
+                             
                              f'train_move_MRR:{np.mean(train_batches_mrr_list):.4f}\n'
                              f'traj_id:{batch[sample_idx][0]}\n'
                              f'input_seq: {batch[sample_idx][1]}\n'
@@ -1219,7 +1258,11 @@ def train(args):
                                  f'train_move_top10_acc:{np.mean(train_batches_top10_acc_list):.4f}\n'
                                  f'train_move_top20_acc:{np.mean(train_batches_top20_acc_list):.4f}\n'
                                  f'train_move_mAP20:{np.mean(train_batches_mAP20_list):.4f}\n'
+                                 f'train_move_ndcg1:{np.mean(train_batches_ndcg1_list):.4f}\n'
+                                 f'train_move_ndcg5:{np.mean(train_batches_ndcg5_list):.4f}\n'
+                                 f'train_move_ndcg10:{np.mean(train_batches_ndcg10_list):.4f}\n'
                                  f'train_move_ndcg20:{np.mean(train_batches_ndcg20_list):.4f}\n'
+                                 
                                  f'train_move_MRR:{np.mean(train_batches_mrr_list):.4f}\n'
                                  f'traj_id:{batch[sample_idx][0]}\n'
                                  f'input_seq: {batch[sample_idx][1]}\n'
@@ -1236,14 +1279,14 @@ def train(args):
         poi_embed_model.eval()
         # node_attn_model.eval()
         user_embed_model.eval()
-        image_embed_model.eval()
-        review_embed_model.eval()
-        if dataset_name in ['Alaska', 'Hawaii']:
-            meta_embed_model.eval()
-            review_summary_embed_model.eval()
-        elif dataset_name in ['NYC', 'TKY', 'GB']:
-            meta_embed_model.eval()
-        embed_fuse_multimodal_model.eval()
+        # image_embed_model.eval()
+        # review_embed_model.eval()
+        # if dataset_name in ['Alaska', 'Hawaii']:
+        #     meta_embed_model.eval()
+        #     review_summary_embed_model.eval()
+        # elif dataset_name in ['NYC', 'TKY', 'GB']:
+        #     meta_embed_model.eval()
+        # embed_fuse_multimodal_model.eval()
         if args.use_time:
             time_embed_model.eval()
         if args.use_cat:
@@ -1260,7 +1303,11 @@ def train(args):
         val_batches_top10_acc_list = []
         val_batches_top20_acc_list = []
         val_batches_mAP20_list = []
+        val_batches_ndcg1_list = []
+        val_batches_ndcg5_list = []
+        val_batches_ndcg10_list = []
         val_batches_ndcg20_list = []
+        
         val_batches_mrr_list = []
         val_batches_loss_list = []
         val_batches_poi_loss_list = []
@@ -1291,13 +1338,13 @@ def train(args):
                 geo_embeddings = geo_embed_model(X_geo, A_geo)
 
             poi_embeddings = poi_embed_model(X, A)
-            image_embeddings = image_embed_model(X_image, A)
-            review_embeddings = review_embed_model(X_review, A)
-            if dataset_name in ['Alaska', 'Hawaii']:
-                meta_embeddings = meta_embed_model(X_meta, A)
-                review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
-            elif dataset_name in ['NYC', 'TKY', 'GB']:
-                meta_embeddings = meta_embed_model(X_meta, A)
+            # image_embeddings = image_embed_model(X_image, A)
+            # review_embeddings = review_embed_model(X_review, A)
+            # if dataset_name in ['Alaska', 'Hawaii']:
+            #     meta_embeddings = meta_embed_model(X_meta, A)
+            #     review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
+            # elif dataset_name in ['NYC', 'TKY', 'GB']:
+            #     meta_embeddings = meta_embed_model(X_meta, A)
             # Convert input seq to embeddings
             for sample in batch:
                 traj_id = sample[0]
@@ -1310,18 +1357,21 @@ def train(args):
                 if args.geo_graph_enabled:
                     label_seq_geos = [poi_idx2geo_idx_dict[each] for each in label_seq]
                     if dataset_name in ['Alaska', 'Hawaii']:
-                        input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
-                                                                                    image_embeddings, meta_embeddings,
-                                                                                    review_embeddings, review_summary_embeddings))
+                        input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings
+                                                                                    # image_embeddings, meta_embeddings,
+                                                                                    # review_embeddings, review_summary_embeddings
+                                                                                    ))
                     elif dataset_name in ['NYC', 'TKY', 'GB']:
                         input_seq_embed = torch.stack(
                             input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
-                                                              image_embeddings, meta_embeddings,
-                                                              review_embeddings, review_embeddings))
+                                                            #   image_embeddings, meta_embeddings,
+                                                            #   review_embeddings, review_embeddings
+                                                              ))
                     else:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
-                                                                                    image_embeddings, image_embeddings,
-                                                                                        review_embeddings, review_embeddings))
+                                                                                    # image_embeddings, image_embeddings,
+                                                                                    #     review_embeddings, review_embeddings
+                                                                                        ))
                 else:
                     input_seq_embed = torch.stack(input_traj_to_embeddings(sample, poi_embeddings))
                 batch_seq_embeds.append(input_seq_embed)
@@ -1448,7 +1498,11 @@ def train(args):
             top10_acc = 0
             top20_acc = 0 
             mAP20 = 0
+            ndcg1 = 0
+            ndcg5 = 0
+            ndcg10 = 0
             ndcg20 = 0
+
             mrr = 0
             batch_label_pois = y_poi.detach().cpu().numpy()
             batch_pred_pois = y_pred_poi_adjusted.detach().cpu().numpy()
@@ -1465,14 +1519,22 @@ def train(args):
                 top10_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=10)
                 top20_acc += top_k_acc_last_timestep(label_pois, pred_pois, k=20)
                 mAP20 += mAP_metric_last_timestep(label_pois, pred_pois, k=20)
+                ndcg1 += ndcg_last_timestep(label_pois, pred_pois, k=1)
+                ndcg5 += ndcg_last_timestep(label_pois, pred_pois, k=5)
+                ndcg10 += ndcg_last_timestep(label_pois, pred_pois, k=10)
                 ndcg20 += ndcg_last_timestep(label_pois, pred_pois, k=20)
+                
                 mrr += MRR_metric_last_timestep(label_pois, pred_pois)
             val_batches_top1_acc_list.append(top1_acc / len(batch_label_pois))
             val_batches_top5_acc_list.append(top5_acc / len(batch_label_pois))
             val_batches_top10_acc_list.append(top10_acc / len(batch_label_pois))
             val_batches_top20_acc_list.append(top20_acc / len(batch_label_pois))
             val_batches_mAP20_list.append(mAP20 / len(batch_label_pois))
+            val_batches_ndcg1_list.append(ndcg1 / len(batch_label_pois))
+            val_batches_ndcg5_list.append(ndcg5 / len(batch_label_pois))
+            val_batches_ndcg10_list.append(ndcg10 / len(batch_label_pois))
             val_batches_ndcg20_list.append(ndcg20 / len(batch_label_pois))
+            
             val_batches_mrr_list.append(mrr / len(batch_label_pois))
             val_batches_loss_list.append(loss.detach().cpu().numpy())
             val_batches_poi_loss_list.append(loss_poi.detach().cpu().numpy())
@@ -1501,7 +1563,11 @@ def train(args):
                              f'val_move_top10_acc:{np.mean(val_batches_top10_acc_list):.4f} \n'
                              f'val_move_top20_acc:{np.mean(val_batches_top20_acc_list):.4f} \n'
                              f'val_move_mAP20:{np.mean(val_batches_mAP20_list):.4f} \n'
+                             f'val_move_ndcg1:{np.mean(val_batches_ndcg1_list):.4f} \n'
+                             f'val_move_ndcg5:{np.mean(val_batches_ndcg5_list):.4f} \n'
+                             f'val_move_ndcg10:{np.mean(val_batches_ndcg10_list):.4f} \n'
                              f'val_move_ndcg20:{np.mean(val_batches_ndcg20_list):.4f} \n'
+                             
                              f'val_move_MRR:{np.mean(val_batches_mrr_list):.4f} \n'
                              f'traj_id:{batch[sample_idx][0]}\n'
                              f'input_seq:{batch[sample_idx][1]}\n'
@@ -1524,7 +1590,11 @@ def train(args):
                                  f'val_move_top10_acc:{np.mean(val_batches_top10_acc_list):.4f} \n'
                                  f'val_move_top20_acc:{np.mean(val_batches_top20_acc_list):.4f} \n'
                                  f'val_move_mAP20:{np.mean(val_batches_mAP20_list):.4f} \n'
+                                 f'val_move_ndcg1:{np.mean(val_batches_ndcg1_list):.4f} \n'
+                                 f'val_move_ndcg5:{np.mean(val_batches_ndcg5_list):.4f} \n'
+                                 f'val_move_ndcg10:{np.mean(val_batches_ndcg10_list):.4f} \n'
                                  f'val_move_ndcg20:{np.mean(val_batches_ndcg20_list):.4f} \n'
+                                 
                                  f'val_move_MRR:{np.mean(val_batches_mrr_list):.4f} \n'
                                  f'traj_id:{batch[sample_idx][0]}\n'
                                  f'input_seq:{batch[sample_idx][1]}\n'
@@ -1542,7 +1612,11 @@ def train(args):
         epoch_train_top10_acc = np.mean(train_batches_top10_acc_list)
         epoch_train_top20_acc = np.mean(train_batches_top20_acc_list)
         epoch_train_mAP20 = np.mean(train_batches_mAP20_list)
+        epoch_train_ndcg1 = np.mean(train_batches_ndcg1_list)
+        epoch_train_ndcg5 = np.mean(train_batches_ndcg5_list)
+        epoch_train_ndcg10 = np.mean(train_batches_ndcg10_list)
         epoch_train_ndcg20 = np.mean(train_batches_ndcg20_list)
+        
         epoch_train_mrr = np.mean(train_batches_mrr_list)
         epoch_train_loss = np.mean(train_batches_loss_list)
         epoch_train_poi_loss = np.mean(train_batches_poi_loss_list)
@@ -1556,6 +1630,9 @@ def train(args):
         epoch_val_top10_acc = np.mean(val_batches_top10_acc_list)
         epoch_val_top20_acc = np.mean(val_batches_top20_acc_list)
         epoch_val_mAP20 = np.mean(val_batches_mAP20_list)
+        epoch_val_ndcg1 = np.mean(val_batches_ndcg1_list)
+        epoch_val_ndcg5 = np.mean(val_batches_ndcg5_list)
+        epoch_val_ndcg10 = np.mean(val_batches_ndcg10_list)
         epoch_val_ndcg20 = np.mean(val_batches_ndcg20_list)
         epoch_val_mrr = np.mean(val_batches_mrr_list)
         epoch_val_loss = np.mean(val_batches_loss_list)
@@ -1579,7 +1656,11 @@ def train(args):
         train_epochs_top10_acc_list.append(epoch_train_top10_acc)
         train_epochs_top20_acc_list.append(epoch_train_top20_acc)
         train_epochs_mAP20_list.append(epoch_train_mAP20)
+        train_epochs_ndcg1_list.append(epoch_train_ndcg1)
+        train_epochs_ndcg5_list.append(epoch_train_ndcg5)
+        train_epochs_ndcg10_list.append(epoch_train_ndcg10)
         train_epochs_ndcg20_list.append(epoch_train_ndcg20)
+        
         train_epochs_mrr_list.append(epoch_train_mrr)
         val_epochs_loss_list.append(epoch_val_loss)
         val_epochs_poi_loss_list.append(epoch_val_poi_loss)
@@ -1593,7 +1674,11 @@ def train(args):
         val_epochs_top10_acc_list.append(epoch_val_top10_acc)
         val_epochs_top20_acc_list.append(epoch_val_top20_acc)
         val_epochs_mAP20_list.append(epoch_val_mAP20)
+        val_epochs_ndcg1_list.append(epoch_val_ndcg1)
+        val_epochs_ndcg5_list.append(epoch_val_ndcg5)
+        val_epochs_ndcg10_list.append(epoch_val_ndcg10)
         val_epochs_ndcg20_list.append(epoch_val_ndcg20)
+        
         val_epochs_mrr_list.append(epoch_val_mrr)
         if args.multi_loss_weight:
             val_epochs_task_weight1_list.append(task_weight1.item())
@@ -1613,7 +1698,11 @@ def train(args):
             best_val_top10_acc = epoch_val_top10_acc
             best_val_top20_acc = epoch_val_top20_acc
             best_val_mAP20 = epoch_val_mAP20
+            best_val_ndcg1 = epoch_val_ndcg1
+            best_val_ndcg5 = epoch_val_ndcg5
+            best_val_ndcg10 = epoch_val_ndcg10
             best_val_ndcg20 = epoch_val_ndcg20
+            
             best_val_mrr = epoch_val_mrr
             best_val_epoch = epoch
 
@@ -1646,7 +1735,11 @@ def train(args):
                      f"train_top10_acc:{epoch_train_top10_acc:.4f}, "
                      f"train_top20_acc:{epoch_train_top20_acc:.4f}, "
                      f"train_mAP20:{epoch_train_mAP20:.4f}, "
+                     f"train_ndcg1:{epoch_train_ndcg1:.4f}, "
+                     f"train_ndcg5:{epoch_train_ndcg5:.4f}, "
+                     f"train_ndcg10:{epoch_train_ndcg10:.4f}, "
                      f"train_ndcg20:{epoch_train_ndcg20:.4f}, "
+                     
                      f"train_mrr:{epoch_train_mrr:.4f}\n"
                      f"val_loss: {epoch_val_loss:.4f}, "
                      f"val_poi_loss: {epoch_val_poi_loss:.4f}, "
@@ -1658,7 +1751,11 @@ def train(args):
                      f"val_top10_acc:{epoch_val_top10_acc:.4f}, "
                      f"val_top20_acc:{epoch_val_top20_acc:.4f}, "
                      f"val_mAP20:{epoch_val_mAP20:.4f}, "
+                     f"val_ndcg1:{epoch_val_ndcg1:.4f}, "
+                     f"val_ndcg5:{epoch_val_ndcg5:.4f}, "
+                     f"val_ndcg10:{epoch_val_ndcg10:.4f}, "
                      f"val_ndcg20:{epoch_val_ndcg20:.4f}, "
+                     
                      f"val_mrr:{epoch_val_mrr:.4f}")
         else:
             logging.info(f"Epoch {epoch}/{args.epochs}\n"
@@ -1670,6 +1767,9 @@ def train(args):
                          f"train_top10_acc:{epoch_train_top10_acc:.4f}, "
                          f"train_top20_acc:{epoch_train_top20_acc:.4f}, "
                          f"train_mAP20:{epoch_train_mAP20:.4f}, "
+                         f"train_ndcg1:{epoch_train_ndcg1:.4f}, "
+                         f"train_ndcg5:{epoch_train_ndcg5:.4f}, "
+                         f"train_ndcg10:{epoch_train_ndcg10:.4f}, "
                          f"train_ndcg20:{epoch_train_ndcg20:.4f}, "
                          f"train_mrr:{epoch_train_mrr:.4f}\n"
                          f"val_loss: {epoch_val_loss:.4f}, "
@@ -1680,6 +1780,9 @@ def train(args):
                          f"val_top10_acc:{epoch_val_top10_acc:.4f}, "
                          f"val_top20_acc:{epoch_val_top20_acc:.4f}, "
                          f"val_mAP20:{epoch_val_mAP20:.4f}, "
+                         f"val_ndcg1:{epoch_val_ndcg1:.4f}, "
+                         f"val_ndcg5:{epoch_val_ndcg5:.4f}, "
+                         f"val_ndcg10:{epoch_val_ndcg10:.4f}, "
                          f"val_ndcg20:{epoch_val_ndcg20:.4f}, "
                          f"val_mrr:{epoch_val_mrr:.4f}")
 
@@ -1750,7 +1853,11 @@ def train(args):
                     'epoch_train_top10_acc': epoch_train_top10_acc,
                     'epoch_train_top20_acc': epoch_train_top20_acc,
                     'epoch_train_mAP20': epoch_train_mAP20,
+                    'epoch_train_ndcg1': epoch_train_ndcg1,
+                    'epoch_train_ndcg5': epoch_train_ndcg5,
+                    'epoch_train_ndcg10': epoch_train_ndcg10,
                     'epoch_train_ndcg20': epoch_train_ndcg20,
+                    
                     'epoch_train_mrr': epoch_train_mrr
                 },
                 'epoch_val_metrics': {
@@ -1763,7 +1870,11 @@ def train(args):
                     'epoch_val_top10_acc': epoch_val_top10_acc,
                     'epoch_val_top20_acc': epoch_val_top20_acc,
                     'epoch_val_mAP20': epoch_val_mAP20,
+                    'epoch_val_ndcg1': epoch_val_ndcg1,
+                    'epoch_val_ndcg5': epoch_val_ndcg5,
+                    'epoch_val_ndcg10': epoch_val_ndcg10,
                     'epoch_val_ndcg20': epoch_val_ndcg20,
+                    
                     'epoch_val_mrr': epoch_val_mrr
                 }
             }
@@ -1791,7 +1902,11 @@ def train(args):
             print(f'train_epochs_top20_acc_list={[float(f"{each:.4f}") for each in train_epochs_top20_acc_list]}',
                   file=f)
             print(f'train_epochs_mAP20_list={[float(f"{each:.4f}") for each in train_epochs_mAP20_list]}', file=f)
+            print(f'train_epochs_ndcg1_list={[float(f"{each:.4f}") for each in train_epochs_ndcg1_list]}', file=f)
+            print(f'train_epochs_ndcg5_list={[float(f"{each:.4f}") for each in train_epochs_ndcg5_list]}', file=f)
+            print(f'train_epochs_ndcg10_list={[float(f"{each:.4f}") for each in train_epochs_ndcg10_list]}', file=f)
             print(f'train_epochs_ndcg20_list={[float(f"{each:.4f}") for each in train_epochs_ndcg20_list]}', file=f)
+            
             print(f'train_epochs_mrr_list={[float(f"{each:.4f}") for each in train_epochs_mrr_list]}', file=f)
         with open(os.path.join(args.save_dir, 'metrics-val.txt'), "w") as f:
             print(f'val_epochs_loss_list={[float(f"{each:.4f}") for each in val_epochs_loss_list]}', file=f)
@@ -1805,7 +1920,11 @@ def train(args):
             print(f'val_epochs_top10_acc_list={[float(f"{each:.4f}") for each in val_epochs_top10_acc_list]}', file=f)
             print(f'val_epochs_top20_acc_list={[float(f"{each:.4f}") for each in val_epochs_top20_acc_list]}', file=f)
             print(f'val_epochs_mAP20_list={[float(f"{each:.4f}") for each in val_epochs_mAP20_list]}', file=f)
+            print(f'val_epochs_ndcg1_list={[float(f"{each:.4f}") for each in val_epochs_ndcg1_list]}', file=f)
+            print(f'val_epochs_ndcg5_list={[float(f"{each:.4f}") for each in val_epochs_ndcg5_list]}', file=f)
+            print(f'val_epochs_ndcg10_list={[float(f"{each:.4f}") for each in val_epochs_ndcg10_list]}', file=f)
             print(f'val_epochs_ndcg20_list={[float(f"{each:.4f}") for each in val_epochs_ndcg20_list]}', file=f)
+            
             print(f'val_epochs_mrr_list={[float(f"{each:.4f}") for each in val_epochs_mrr_list]}', file=f)
             if args.multi_loss_weight:
                 print(f'val_epochs_task_weight1_list={[float(f"{each:.4f}") for each in val_epochs_task_weight1_list]}', file=f)
@@ -1818,7 +1937,11 @@ def train(args):
             print(f'last_top10_acc={epoch_val_top10_acc}', file=f)
             print(f'last_top20_acc={epoch_val_top20_acc}', file=f)
             print(f'last_mAP20={epoch_val_mAP20}', file=f)
+            print(f'last_ndcg1={epoch_val_ndcg1}', file=f)
+            print(f'last_ndcg5={epoch_val_ndcg5}', file=f)
+            print(f'last_ndcg10={epoch_val_ndcg10}', file=f)
             print(f'last_ndcg20={epoch_val_ndcg20}', file=f)
+            
             print(f'last_mrr={epoch_val_mrr}', file=f)
 
             print(f'best_top1_acc={best_val_top1_acc}', file=f)
@@ -1826,7 +1949,11 @@ def train(args):
             print(f'best_top10_acc={best_val_top10_acc}', file=f)
             print(f'best_top20_acc={best_val_top20_acc}', file=f)
             print(f'best_mAP20={best_val_mAP20}', file=f)
+            print(f'best_ndcg1={best_val_ndcg1}', file=f)
+            print(f'best_ndcg5={best_val_ndcg5}', file=f)
+            print(f'best_ndcg10={best_val_ndcg10}', file=f)
             print(f'best_ndcg20={best_val_ndcg20}', file=f)
+            
             print(f'best_mrr={best_val_mrr}', file=f)
             print(f'best_epoch={best_val_epoch}', file=f)
             print(f'sum_of_train_epochs={epoch}', file=f)
@@ -1843,4 +1970,3 @@ if __name__ == '__main__':
     args.feature3 = 'latitude'
     args.feature4 = 'longitude'
     train(args)
-
