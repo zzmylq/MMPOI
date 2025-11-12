@@ -26,7 +26,7 @@ from utils import increment_path, calculate_laplacian_matrix, zipdir, top_k_acc_
 
 from sentence_transformers import SentenceTransformer
 
-from Geohash import geohash
+import geohash
 
 import torch.nn.functional as F
 from collections import OrderedDict
@@ -43,7 +43,7 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 torch.backends.cudnn.deterministic = True
 
-dataset_name = args.data_adj_mtx.split('/')[1]
+dataset_name = 'NYC'
 
 def train(args):
     args.save_dir = increment_path(Path(args.project) / args.name, exist_ok=args.exist_ok, sep='-')
@@ -208,13 +208,13 @@ def train(args):
             pickle.dump(data, f)
         return data
     if args.multimodal_enabled:
-        image_embeddings_filename = f'./dataset/{dataset_name}/modal_image_embedding.json'
-        review_embeddings_filename = f'./dataset/{dataset_name}/modal_review_embedding.json'
+        image_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_image_embedding.json'
+        review_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_review_embedding.json'
         if dataset_name in ['Alaska', 'Hawaii']:
-            meta_embeddings_filename = f'./dataset/{dataset_name}/modal_meta_embedding.json'
-            review_summary_embeddings_filename = f'./dataset/{dataset_name}/modal_review_summary_embedding.json'
+            meta_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_meta_embedding.json'
+            review_summary_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_review_summary_embedding.json'
         elif dataset_name in ['NYC', 'TKY', 'GB']:
-            meta_embeddings_filename = f'./dataset/{dataset_name}/modal_meta_embedding.json'
+            meta_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_meta_embedding.json'
         print('loading multimodal data...')
         image_dict = load_multimodal_data(image_embeddings_filename)
         review_dict = load_multimodal_data(review_embeddings_filename)
@@ -232,6 +232,7 @@ def train(args):
             logging.info(f"After loading multimodal data, X_review_summary.shape: {X_review_summary.shape}")
         elif dataset_name in ['NYC', 'TKY', 'GB']:
             X_meta = np.array([meta_dict[poi_id] for poi_id in poi_ids])
+            X_meta = X_meta.squeeze(1)
             logging.info(f"After loading multimodal data, X_meta.shape: {X_meta.shape}")
         logging.info(f"After loading multimodal data, X_image.shape: {X_image.shape}")
         logging.info(f"After loading multimodal data, X_review.shape: {X_review.shape}")
@@ -444,12 +445,12 @@ def train(args):
         cat_embed_model = CategoryEmbeddings(num_cats, args.cat_embed_dim, one_hot_rlt)
 
     # %% Model5: Embedding fusion models
-    # if dataset_name in ['Alaska', 'Hawaii']:
-    #     embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 4)
-    # elif dataset_name in ['NYC', 'TKY', 'GB']:
-    #     embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 3)
-    # else:
-    #     embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 2)
+    if dataset_name in ['Alaska', 'Hawaii']:
+        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 4)
+    elif dataset_name in ['NYC', 'TKY', 'GB']:
+        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 3)
+    else:
+        embed_fuse_multimodal_model = FuseMultimodalEmbeddings(args.multimodal_embed_dim, 2)
 
     embed_fuse_model1 = FuseEmbeddings(args.user_embed_dim, args.poi_embed_dim)
 
@@ -464,16 +465,16 @@ def train(args):
         if dataset_name in ['Alaska', 'Hawaii']:
             args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim
         elif dataset_name in ['NYC', 'TKY', 'GB']:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim+ args.multimodal_embed_dim*3
         else:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim + args.geo_embed_dim+ args.multimodal_embed_dim*3
     else:
         if dataset_name in ['Alaska', 'Hawaii']:
             args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim
         elif dataset_name in ['NYC', 'TKY', 'GB']:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim+ args.multimodal_embed_dim*3
         else:
-            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim
+            args.seq_input_embed = args.poi_embed_dim + args.user_embed_dim + args.time_embed_dim+ args.multimodal_embed_dim*3
     if args.geo_graph_enabled:
         seq_model = TransformerModel(num_pois,
                                  num_cats,
@@ -530,12 +531,12 @@ def train(args):
                                               # list(node_attn_model.parameters()) +
                                               list(geo_embed_model.parameters()) +
                                               list(user_embed_model.parameters()) +
-                                            #   list(image_embed_model.parameters()) +
-                                            #   list(meta_embed_model.parameters()) +
-                                            #   list(review_embed_model.parameters()) +
-                                            #   list(review_summary_embed_model.parameters()) +
+                                              list(image_embed_model.parameters()) +
+                                              list(meta_embed_model.parameters()) +
+                                              list(review_embed_model.parameters()) +
+                                              list(review_summary_embed_model.parameters()) +
                                               list(time_embed_model.parameters()) +
-                                            #   list(embed_fuse_multimodal_model.parameters()) +
+                                              list(embed_fuse_multimodal_model.parameters()) +
                                               list(embed_fuse_model1.parameters()) +
                                               list(embed_fuse_model2.parameters()) +
                                               list(seq_model.parameters()) +
@@ -547,11 +548,11 @@ def train(args):
                                                   # list(node_attn_model.parameters()) +
                                                   list(geo_embed_model.parameters()) +
                                                   list(user_embed_model.parameters()) +
-                                                #   list(image_embed_model.parameters()) +
-                                                #   list(meta_embed_model.parameters()) +
-                                                #   list(review_embed_model.parameters()) +
+                                                  list(image_embed_model.parameters()) +
+                                                  list(meta_embed_model.parameters()) +
+                                                  list(review_embed_model.parameters()) +
                                                   list(time_embed_model.parameters()) +
-                                                #   list(embed_fuse_multimodal_model.parameters()) +
+                                                  list(embed_fuse_multimodal_model.parameters()) +
                                                   list(embed_fuse_model1.parameters()) +
                                                   list(embed_fuse_model2.parameters()) +
                                                   list(seq_model.parameters()) +
@@ -563,10 +564,10 @@ def train(args):
                                                   # list(node_attn_model.parameters()) +
                                                   list(geo_embed_model.parameters()) +
                                                   list(user_embed_model.parameters()) +
-                                                #   list(image_embed_model.parameters()) +
-                                                #   list(review_embed_model.parameters()) +
+                                                  list(image_embed_model.parameters()) +
+                                                  list(review_embed_model.parameters()) +
                                                   list(time_embed_model.parameters()) +
-                                                #   list(embed_fuse_multimodal_model.parameters()) +
+                                                  list(embed_fuse_multimodal_model.parameters()) +
                                                   list(embed_fuse_model1.parameters()) +
                                                   list(embed_fuse_model2.parameters()) +
                                                   list(seq_model.parameters()) +
@@ -578,12 +579,12 @@ def train(args):
                                               # list(node_attn_model.parameters()) +
                                               list(geo_embed_model.parameters()) +
                                               list(user_embed_model.parameters()) +
-                                            #   list(image_embed_model.parameters()) +
-                                            #   list(meta_embed_model.parameters()) +
-                                            #   list(review_embed_model.parameters()) +
-                                            #   list(review_summary_embed_model.parameters()) +
+                                              list(image_embed_model.parameters()) +
+                                              list(meta_embed_model.parameters()) +
+                                              list(review_embed_model.parameters()) +
+                                              list(review_summary_embed_model.parameters()) +
                                               list(time_embed_model.parameters()) +
-                                            #   list(embed_fuse_multimodal_model.parameters()) +
+                                              list(embed_fuse_multimodal_model.parameters()) +
                                               list(embed_fuse_model1.parameters()) +
                                               list(embed_fuse_model2.parameters()) +
                                               list(seq_model.parameters()),
@@ -694,7 +695,7 @@ def train(args):
         return input_seq_embed
 
     def input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings, 
-    # image_embeddings, meta_embeddings, review_embeddings, review_summary_embeddings
+    image_embeddings, meta_embeddings, review_embeddings, review_summary_embeddings
     ):  
         # Parse sample
         traj_id = sample[0]
@@ -720,18 +721,18 @@ def train(args):
             geo_embedding = geo_embeddings[input_seq_geo[idx]]
             geo_embedding = torch.squeeze(geo_embedding).to(device=args.device)
 
-            # image_embedding = image_embeddings[input_seq[idx]]
-            # image_embedding = torch.squeeze(image_embedding).to(device=args.device)
-            # review_embedding = review_embeddings[input_seq[idx]]
-            # review_embedding = torch.squeeze(review_embedding).to(device=args.device)
-            # if dataset_name in ['Alaska', 'Hawaii']:
-            #     meta_embedding = meta_embeddings[input_seq[idx]]
-            #     meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
-            #     review_summary_embedding = review_summary_embeddings[input_seq[idx]]
-            #     review_summary_embedding = torch.squeeze(review_summary_embedding).to(device=args.device)
-            # elif dataset_name in ['NYC', 'TKY', 'GB']:
-            #     meta_embedding = meta_embeddings[input_seq[idx]]
-            #     meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
+            image_embedding = image_embeddings[input_seq[idx]]
+            image_embedding = torch.squeeze(image_embedding).to(device=args.device)
+            review_embedding = review_embeddings[input_seq[idx]]
+            review_embedding = torch.squeeze(review_embedding).to(device=args.device)
+            if dataset_name in ['Alaska', 'Hawaii']:
+                meta_embedding = meta_embeddings[input_seq[idx]]
+                meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
+                review_summary_embedding = review_summary_embeddings[input_seq[idx]]
+                review_summary_embedding = torch.squeeze(review_summary_embedding).to(device=args.device)
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                meta_embedding = meta_embeddings[input_seq[idx]]
+                meta_embedding = torch.squeeze(meta_embedding).to(device=args.device)
 
             # Time to vector
             if args.use_time:
@@ -740,13 +741,13 @@ def train(args):
                 time_embedding = torch.squeeze(time_embedding).to(device=args.device)
 
             # Fuse user+poi embeds
-            # if dataset_name in ['Alaska', 'Hawaii']:
-            #     multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding, review_embedding, review_summary_embedding)
-            # elif dataset_name in ['NYC', 'TKY', 'GB']:
-            #     multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding,
-            #                                                              review_embedding)
-            # else:
-            #     multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, review_embedding)
+            if dataset_name in ['Alaska', 'Hawaii']:
+                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding, review_embedding, review_summary_embedding)
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, meta_embedding,
+                                                                         review_embedding)
+            else:
+                multimodal_fused_embedding = embed_fuse_multimodal_model(image_embedding, review_embedding)
             fused_embedding1 = embed_fuse_model1(user_embedding, poi_embedding)
 
             if args.use_time:
@@ -754,8 +755,8 @@ def train(args):
             else:
                 fused_embedding2 = embed_fuse_model2(geo_embedding)
                 
-            # concat_embedding = torch.cat((fused_embedding1, fused_embedding2, multimodal_fused_embedding), dim=-1)
-            concat_embedding = torch.cat((fused_embedding1, fused_embedding2), dim=-1)
+            concat_embedding = torch.cat((fused_embedding1, fused_embedding2, multimodal_fused_embedding), dim=-1)
+            # concat_embedding = torch.cat((fused_embedding1, fused_embedding2), dim=-1)
 
             # Save final embed
             input_seq_embed.append(concat_embedding)
@@ -770,14 +771,14 @@ def train(args):
     poi_embed_model = poi_embed_model.to(device=args.device)
     # node_attn_model = node_attn_model.to(device=args.device)
     user_embed_model = user_embed_model.to(device=args.device)
-    # image_embed_model = image_embed_model.to(device=args.device)
-    # review_embed_model = review_embed_model.to(device=args.device)
-    # if dataset_name in ['Alaska', 'Hawaii']:
-    #     meta_embed_model = meta_embed_model.to(device=args.device)
-    #     review_summary_embed_model = review_summary_embed_model.to(device=args.device)
-    # elif dataset_name in ['NYC', 'TKY', 'GB']:
-    #     meta_embed_model = meta_embed_model.to(device=args.device)
-    # embed_fuse_multimodal_model = embed_fuse_multimodal_model.to(device=args.device)
+    image_embed_model = image_embed_model.to(device=args.device)
+    review_embed_model = review_embed_model.to(device=args.device)
+    if dataset_name in ['Alaska', 'Hawaii']:
+        meta_embed_model = meta_embed_model.to(device=args.device)
+        review_summary_embed_model = review_summary_embed_model.to(device=args.device)
+    elif dataset_name in ['NYC', 'TKY', 'GB']:
+        meta_embed_model = meta_embed_model.to(device=args.device)
+    embed_fuse_multimodal_model = embed_fuse_multimodal_model.to(device=args.device)
 
     if args.use_time:
         time_embed_model = time_embed_model.to(device=args.device)
@@ -880,43 +881,43 @@ def train(args):
         L_norm = torch.mm(torch.mm(d_mat_inv_sqrt, adj), d_mat_inv_sqrt)
         return L_norm
 
-    # if args.use_A_plus:
-        # image_adj = build_sim(X_image)
-        # image_adj = build_knn_neighbourhood(image_adj, args.knn_k)
-        # review_adj = build_sim(X_review)
-        # review_adj = build_knn_neighbourhood(review_adj, args.knn_k)
-        # if dataset_name in ['Alaska', 'Hawaii']:
-        #     meta_adj = build_sim(X_meta)
-        #     meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
-        #     review_summary_adj = build_sim(X_review_summary)
-        #     review_summary_adj = build_knn_neighbourhood(review_summary_adj, args.knn_k)
-        # elif dataset_name in ['NYC', 'TKY', 'GB']:
-        #     meta_adj = build_sim(X_meta)
-        #     meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
-        # image_adj[image_adj != image_adj] = 0
-        # review_adj[review_adj != review_adj] = 0
-        # if dataset_name in ['Alaska', 'Hawaii']:
-        #     meta_adj[meta_adj != meta_adj] = 0
-        #     review_summary_adj[review_summary_adj != review_summary_adj] = 0
-        # elif dataset_name in ['NYC', 'TKY', 'GB']:
-        #     meta_adj[meta_adj != meta_adj] = 0
-        # if dataset_name in ['Alaska', 'Hawaii']:
-        #     multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
-        #                      + args.multimodal_graph_weights[1] * meta_adj \
-        #                      + args.multimodal_graph_weights[2] * review_adj \
-        #                      + args.multimodal_graph_weights[3] * review_summary_adj
-        # elif dataset_name in ['NYC', 'TKY', 'GB']:
-        #     multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
-        #                      + args.multimodal_graph_weights[1] * meta_adj \
-        #                      + args.multimodal_graph_weights[2] * review_adj
-        # else:
-        #     multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
-        #                      + args.multimodal_graph_weights[2] * review_adj
-        # multimodal_adj = compute_normalized_laplacian(multimodal_adj)
+    if args.use_A_plus:
+        image_adj = build_sim(X_image)
+        image_adj = build_knn_neighbourhood(image_adj, args.knn_k)
+        review_adj = build_sim(X_review)
+        review_adj = build_knn_neighbourhood(review_adj, args.knn_k)
+        if dataset_name in ['Alaska', 'Hawaii']:
+            meta_adj = build_sim(X_meta)
+            meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
+            review_summary_adj = build_sim(X_review_summary)
+            review_summary_adj = build_knn_neighbourhood(review_summary_adj, args.knn_k)
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_adj = build_sim(X_meta)
+            meta_adj = build_knn_neighbourhood(meta_adj, args.knn_k)
+        image_adj[image_adj != image_adj] = 0
+        review_adj[review_adj != review_adj] = 0
+        if dataset_name in ['Alaska', 'Hawaii']:
+            meta_adj[meta_adj != meta_adj] = 0
+            review_summary_adj[review_summary_adj != review_summary_adj] = 0
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_adj[meta_adj != meta_adj] = 0
+        if dataset_name in ['Alaska', 'Hawaii']:
+            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+                             + args.multimodal_graph_weights[1] * meta_adj \
+                             + args.multimodal_graph_weights[2] * review_adj \
+                             + args.multimodal_graph_weights[3] * review_summary_adj
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+                             + args.multimodal_graph_weights[1] * meta_adj \
+                             + args.multimodal_graph_weights[2] * review_adj
+        else:
+            multimodal_adj = args.multimodal_graph_weights[0] * image_adj \
+                             + args.multimodal_graph_weights[2] * review_adj
+        multimodal_adj = compute_normalized_laplacian(multimodal_adj)
 
-        # A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * multimodal_adj
-        # A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * A
-        # A = A_plus
+        A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * multimodal_adj
+        A_plus = args.A_plus_weights[0] * A + args.A_plus_weights[1] * A
+        A = A_plus
 
 
     for epoch in range(args.epochs):
@@ -926,14 +927,14 @@ def train(args):
         # node_attn_model.train()
         user_embed_model.train()
 
-        # image_embed_model.train()
-        # review_embed_model.train()
-        # if dataset_name in ['Alaska', 'Hawaii']:
-        #     meta_embed_model.train()
-        #     review_summary_embed_model.train()
-        # elif dataset_name in ['NYC', 'TKY', 'GB']:
-        #     meta_embed_model.train()
-        # embed_fuse_multimodal_model.train()
+        image_embed_model.train()
+        review_embed_model.train()
+        if dataset_name in ['Alaska', 'Hawaii']:
+            meta_embed_model.train()
+            review_summary_embed_model.train()
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_embed_model.train()
+        embed_fuse_multimodal_model.train()
 
         if args.use_time:
             time_embed_model.train()
@@ -986,13 +987,13 @@ def train(args):
                 geo_embeddings = geo_embed_model(X_geo, A_geo)
 
             poi_embeddings = poi_embed_model(X, A)  
-            # image_embeddings = image_embed_model(X_image, A)
-            # review_embeddings = review_embed_model(X_review, A)
-            # if dataset_name in ['Alaska', 'Hawaii']:
-            #     meta_embeddings = meta_embed_model(X_meta, A)
-            #     review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
-            # elif dataset_name in ['NYC', 'TKY', 'GB']:
-            #     meta_embeddings = meta_embed_model(X_meta, A)
+            image_embeddings = image_embed_model(X_image, A)
+            review_embeddings = review_embed_model(X_review, A)
+            if dataset_name in ['Alaska', 'Hawaii']:
+                meta_embeddings = meta_embed_model(X_meta, A)
+                review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                meta_embeddings = meta_embed_model(X_meta, A)
             # Convert input seq to embeddings
             for sample in batch: 
              
@@ -1009,26 +1010,26 @@ def train(args):
                     if dataset_name in ['Alaska', 'Hawaii']:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                                     geo_embeddings, 
-                                                                                    # image_embeddings,
-                                                                                    # meta_embeddings,
-                                                                                    # review_embeddings,
-                                                                                    # review_summary_embeddings
+                                                                                    image_embeddings,
+                                                                                    meta_embeddings,
+                                                                                    review_embeddings,
+                                                                                    review_summary_embeddings
                                                                                     ))  
                     elif dataset_name in ['NYC', 'TKY', 'GB']:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                                         geo_embeddings,
-                                                                                        # image_embeddings,
-                                                                                        # meta_embeddings,
-                                                                                        # review_embeddings,
-                                                                                        # review_embeddings
+                                                                                        image_embeddings,
+                                                                                        meta_embeddings,
+                                                                                        review_embeddings,
+                                                                                        review_embeddings
                                                                                         ))  
                     else:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings,
                                                                                        geo_embeddings,
-                                                                                    #    image_embeddings,
-                                                                                    #     image_embeddings,
-                                                                                    #    review_embeddings,
-                                                                                    #     review_embeddings
+                                                                                       image_embeddings,
+                                                                                        image_embeddings,
+                                                                                       review_embeddings,
+                                                                                        review_embeddings
                                                                                         ))  
                 else:
                     input_seq_embed = torch.stack(input_traj_to_embeddings(sample, poi_embeddings))  
@@ -1279,14 +1280,14 @@ def train(args):
         poi_embed_model.eval()
         # node_attn_model.eval()
         user_embed_model.eval()
-        # image_embed_model.eval()
-        # review_embed_model.eval()
-        # if dataset_name in ['Alaska', 'Hawaii']:
-        #     meta_embed_model.eval()
-        #     review_summary_embed_model.eval()
-        # elif dataset_name in ['NYC', 'TKY', 'GB']:
-        #     meta_embed_model.eval()
-        # embed_fuse_multimodal_model.eval()
+        image_embed_model.eval()
+        review_embed_model.eval()
+        if dataset_name in ['Alaska', 'Hawaii']:
+            meta_embed_model.eval()
+            review_summary_embed_model.eval()
+        elif dataset_name in ['NYC', 'TKY', 'GB']:
+            meta_embed_model.eval()
+        embed_fuse_multimodal_model.eval()
         if args.use_time:
             time_embed_model.eval()
         if args.use_cat:
@@ -1338,13 +1339,13 @@ def train(args):
                 geo_embeddings = geo_embed_model(X_geo, A_geo)
 
             poi_embeddings = poi_embed_model(X, A)
-            # image_embeddings = image_embed_model(X_image, A)
-            # review_embeddings = review_embed_model(X_review, A)
-            # if dataset_name in ['Alaska', 'Hawaii']:
-            #     meta_embeddings = meta_embed_model(X_meta, A)
-            #     review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
-            # elif dataset_name in ['NYC', 'TKY', 'GB']:
-            #     meta_embeddings = meta_embed_model(X_meta, A)
+            image_embeddings = image_embed_model(X_image, A)
+            review_embeddings = review_embed_model(X_review, A)
+            if dataset_name in ['Alaska', 'Hawaii']:
+                meta_embeddings = meta_embed_model(X_meta, A)
+                review_summary_embeddings = review_summary_embed_model(X_review_summary, A)
+            elif dataset_name in ['NYC', 'TKY', 'GB']:
+                meta_embeddings = meta_embed_model(X_meta, A)
             # Convert input seq to embeddings
             for sample in batch:
                 traj_id = sample[0]
@@ -1357,20 +1358,20 @@ def train(args):
                 if args.geo_graph_enabled:
                     label_seq_geos = [poi_idx2geo_idx_dict[each] for each in label_seq]
                     if dataset_name in ['Alaska', 'Hawaii']:
-                        input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings
-                                                                                    # image_embeddings, meta_embeddings,
-                                                                                    # review_embeddings, review_summary_embeddings
+                        input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
+                                                                                    image_embeddings, meta_embeddings,
+                                                                                    review_embeddings, review_summary_embeddings
                                                                                     ))
                     elif dataset_name in ['NYC', 'TKY', 'GB']:
                         input_seq_embed = torch.stack(
                             input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
-                                                            #   image_embeddings, meta_embeddings,
-                                                            #   review_embeddings, review_embeddings
+                                                              image_embeddings, meta_embeddings,
+                                                              review_embeddings, review_embeddings
                                                               ))
                     else:
                         input_seq_embed = torch.stack(input_traj_to_embeddings_with_geo(sample, poi_embeddings, geo_embeddings,
-                                                                                    # image_embeddings, image_embeddings,
-                                                                                    #     review_embeddings, review_embeddings
+                                                                                    image_embeddings, image_embeddings,
+                                                                                        review_embeddings, review_embeddings
                                                                                         ))
                 else:
                     input_seq_embed = torch.stack(input_traj_to_embeddings(sample, poi_embeddings))
