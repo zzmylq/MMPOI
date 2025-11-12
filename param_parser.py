@@ -5,12 +5,12 @@ import os
 import torch
 
 if torch.cuda.is_available():
-    device = torch.device('cuda:5')
+    device = torch.device('cuda:2')
 else:
     device = torch.device('cpu')
 
 def parameter_parser():
-    parser = argparse.ArgumentParser(description="Run MMPOI.")
+    parser = argparse.ArgumentParser(description="Run GETNext.")
 
     '''————————————————major parameters————————————————'''
     parser.add_argument('--seed',
@@ -35,7 +35,7 @@ def parameter_parser():
                         help='Dropout rate for transformer')
     parser.add_argument('--batch',
                         type=int,
-                        default=64,
+                        default=256,
                         help='Batch size.')
 
     parser.add_argument('--lr',
@@ -47,27 +47,27 @@ def parameter_parser():
 
     parser.add_argument('--data-adj-mtx',
                         type=str,
-                        default='dataset/NYC/graph_A.csv',
+                        default='NYC/graph_A.csv',
                         help='Graph adjacent path')
     parser.add_argument('--data-node-feats',
                         type=str,
-                        default='dataset/NYC/graph_X.csv',
+                        default='NYC/graph_X.csv',
                         help='Graph node features path')
     parser.add_argument('--data-train',
                         type=str,
-                        default='dataset/NYC/NYC_train.csv',
+                        default='NYC/NYC_train.csv',
                         help='Training data path')
     parser.add_argument('--data-val',
                         type=str,
-                        default='dataset/NYC/NYC_test.csv',
+                        default='NYC/NYC_test.csv',
                         help='Validation data path')
     parser.add_argument('--geo-adj-mtx',
                         type=str,
-                        default='dataset/NYC/geo_graph_A.csv',
+                        default='NYC/geo_graph_A.csv',
                         help='Geo graph adjacent path')
     parser.add_argument('--geo-node-feats',
                         type=str,
-                        default='dataset/NYC/geo_graph_X.csv',
+                        default='NYC/geo_graph_X.csv',
                         help='Geo graph node features path')
 
     '''————————————————ablation study————————————————'''
@@ -90,7 +90,7 @@ def parameter_parser():
 
     parser.add_argument('--cat-encoder',
                         type=str,
-                        default='SentenceTransformer',
+                        default='OneHot',
                         help='Categorical encoder')
 
 
@@ -126,7 +126,7 @@ def parameter_parser():
 
     parser.add_argument('--cat-loss-type',
                         type=str,
-                        default='embedding_loss',
+                        default='id_loss',
                         help='whether to use multi loss weight')
 
     parser.add_argument('--fusion-method',
@@ -141,7 +141,7 @@ def parameter_parser():
 
     parser.add_argument('--use-cat',
                         type=bool,
-                        default=False,
+                        default=True,
                         help='Whether to use cat embedding to fusion')
 
     parser.add_argument('--cat-type',
@@ -258,7 +258,7 @@ def parameter_parser():
                         help='Category embedding dimensions')
     parser.add_argument('--time-loss-weight',
                         type=int,
-                        default=10,
+                        default=1,
                         help='Scale factor for the time loss term')
     parser.add_argument('--node-attn-nhid',
                         type=int,
