@@ -208,13 +208,13 @@ def train(args):
             pickle.dump(data, f)
         return data
     if args.multimodal_enabled:
-        image_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_image_embedding.json'
-        review_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_review_embedding.json'
+        image_embeddings_filename = f'NYC/modal_image_embedding.json'
+        review_embeddings_filename = f'NYC/modal_review_embedding.json'
         if dataset_name in ['Alaska', 'Hawaii']:
-            meta_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_meta_embedding.json'
-            review_summary_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_review_summary_embedding.json'
+            meta_embeddings_filename = f'NYC/modal_meta_embedding.json'
+            review_summary_embeddings_filename = f'NYC/modal_review_summary_embedding.json'
         elif dataset_name in ['NYC', 'TKY', 'GB']:
-            meta_embeddings_filename = f'/home/CaiZhuoXiao/MMPOI-main/dataset/NYC/modal_meta_embedding.json'
+            meta_embeddings_filename = f'NYC/modal_meta_embedding.json'
         print('loading multimodal data...')
         image_dict = load_multimodal_data(image_embeddings_filename)
         review_dict = load_multimodal_data(review_embeddings_filename)
